@@ -1,0 +1,68 @@
+on:
+  workflow_call:
+    inputs:
+      sonar-url:
+        type: string
+        description: URL of the Sonar server to use for analyzing the code. If omitted, the WTax Sonar server at sonar.wtax.co will be used. The `sonar-login` secret should hold a valid access token or username:password combination for this server.
+        required: false
+        default: https://sonar.wtax.co
+      maven-repository-url:
+        type: string
+        description: URL of a Maven repository to use for retrieving artifacts that are not on Maven Central. If omitted, the maven-public repository on the WTax Nexus server at nexus.wtax.co will be used. The `maven-repository-username` input should hold a valid username for this server and the `maven-repository-password` a valid (encrypted) password.
+        required: false
+        default: https://nexus.wtax.co/repository/maven-public/
+      maven-repository-username:
+        type: string
+        description: The username used to authenticate to the Maven repository specified in the `maven-repository-url` input.
+        required: false
+        default: github
+      jdk-version:
+        type: string
+        description: Version of the Zulu JDK to use to build the project. If omitted, defaults to 17.
+        required: false
+        default: 17
+    secrets:
+      maven-repository-password:
+        description: Password for the Maven repository specified in the `maven-repository-url` corresponding to the `maven-repository-username`.
+        required: true
+      sonar-login:
+        description: Access token or username:password combination for the Sonar server specified in the `sonar-url` input.
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print IP address of runner
+        run: curl -s ifconfig.me
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: ${{ inputs.jdk-version }}
+          cache: maven
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v14
+        with:
+          repositories: '[{ "id": "maven-repository", "name": "Maven Repository", "url": "${{ inputs.maven-repository-url }}" }]'
+          servers: '[{ "id": "maven-repository", "username": "${{ inputs.maven-repository-username }}", "password": "${{ secrets.maven-repository-password }}" }]'
+      - name: Cache CVE database for OWASP dependency-check
+        uses: actions/cache@v3
+        with:
+          path: dependency-check-data
+          key: "${{ runner.os }}-dependency-check-database-${{ hashFiles('dependency-check-data/nvdcve-1.1-modified.meta') }}"
+          restore-keys: |
+            ${{ runner.os }}-dependency-check-database-
+      - name: Build with Maven
+        run: mvn clean verify sonar:sonar sonar-quality-gate:check -Dsonar.host.url=${{ inputs.sonar-url }} -Dsonar.login="${{ secrets.sonar-login }}" -DdataDirectory=dependency-check-data
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: target
+          path: target
+      - name: Archive deploy scripts
+        uses: actions/upload-artifact@v2
+        with:
+          name: deploy
+          path: deploy
