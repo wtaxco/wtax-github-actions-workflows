@@ -31,6 +31,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GOALS: clean verify sonar:sonar io.github.r0bb3n:sonar-quality-gate-maven-plugin:1.2.1:check
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
@@ -55,7 +57,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-dependency-check-database-
       - name: Build with Maven
-        run: mvn clean verify sonar:sonar sonar-quality-gate:check -Dsonar.host.url=${{ inputs.sonar-url }} -Dsonar.login="${{ secrets.sonar-login }}" -DdataDirectory=dependency-check-data
+        run: mvn ${{ env.GOALS }} -Dsonar.host.url=${{ inputs.sonar-url }} -Dsonar.login="${{ secrets.sonar-login }}" -DdataDirectory=dependency-check-data
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
