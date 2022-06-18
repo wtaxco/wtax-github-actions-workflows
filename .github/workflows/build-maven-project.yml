@@ -61,10 +61,10 @@ jobs:
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: target
+          name: artifact
           path: target
       - name: Archive deploy scripts
         uses: actions/upload-artifact@v2
         with:
-          name: deploy
+          name: deploy-scripts
           path: deploy
