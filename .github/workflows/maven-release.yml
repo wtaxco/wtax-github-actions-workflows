@@ -6,12 +6,12 @@ name: Release with Maven
 on:
   workflow_call:
     inputs:
-      release_version:
+      release-version:
         description: "Release version (leave empty to determine from current SNAPSHOT version)"
         type: string
         default: ""
         required: false
-      skip_prepare:
+      skip-prepare:
         description: "Skip prepare"
         type: boolean
         required: true
@@ -60,40 +60,40 @@ jobs:
           distribution: zulu
           java-version: ${{ inputs.jdk-version }}
           cache: maven
-        if: github.event.inputs.skip_prepare != 'yes'
+        if: github.event.inputs.skip-prepare != 'yes'
 
       - name: Configure Git user
         run: |
           git config user.email "github-actions@wtax.co"
           git config user.name "GitHub Actions"
-        if: github.event.inputs.skip_prepare != 'yes'
+        if: github.event.inputs.skip-prepare != 'yes'
 
       - name: Set release version to requested value
-        if: github.event.inputs.release_version != ''
-        run: echo 'VERSION=${{ github.event.inputs.release_version }}' >> $GITHUB_ENV
+        if: github.event.inputs.release-version != ''
+        run: echo 'VERSION=${{ github.event.inputs.release-version }}' >> $GITHUB_ENV
 
       - name: Deduce release version from current SNAPSHOT version
-        if: github.event.inputs.release_version == ''
+        if: github.event.inputs.release-version == ''
         run: xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml | sed -e 's/\(.*\)-SNAPSHOT/VERSION=\1/' >> $GITHUB_ENV
 
       - name: Update POM file(s) with release version
         run: mvn -B versions:set -DnewVersion=${{ env.VERSION }}
-        if: github.event.inputs.skip_prepare != 'yes'
+        if: github.event.inputs.skip-prepare != 'yes'
 
       - name: Determine release branch
         run: echo RELEASE_BRANCH=release/v${{ env.VERSION }} >> $GITHUB_ENV
 
       - name: Create release branch and push updated POM file
         run: git checkout -b ${{ env.RELEASE_BRANCH }} && git add pom.xml && git commit -m "[release] Update pom.xml to release version ${{ env.VERSION }}" && git push origin ${{ env.RELEASE_BRANCH }}
-        if: github.event.inputs.skip_prepare != 'yes'
+        if: github.event.inputs.skip-prepare != true
 
       - name: Update pom.xml to next development version on main branch
         run: git checkout main && mvn -B versions:set -DnewVersion=${{ env.VERSION }} && mvn -B release:update-versions -DautoVersionSubmodules=true && git add pom.xml && git commit -m "[release] Update pom.xml to next SNAPSHOT version" && git push
-        if: github.event.inputs.skip_prepare != 'yes'
+        if: github.event.inputs.skip-prepare != true
 
     outputs:
-      release_version: ${{ env.VERSION }}
-      release_branch: ${{ env.RELEASE_BRANCH }}
+      release-version: ${{ env.VERSION }}
+      release-branch: ${{ env.RELEASE_BRANCH }}
 
   perform_release:
     name: "Perform release"
@@ -105,7 +105,7 @@ jobs:
       - name: Check out release branch of project
         uses: actions/checkout@v3
         with:
-          ref: ${{ needs.prepare_release.outputs.release_branch }}
+          ref: ${{ needs.prepare_release.outputs.release-branch }}
 
       - name: Set up JDK
         uses: actions/setup-java@v2
