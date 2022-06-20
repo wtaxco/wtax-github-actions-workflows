@@ -20,6 +20,11 @@ on:
         description: URL of a Maven repository to use for retrieving artifacts that are not on Maven Central. If omitted, the maven-public repository on the WTax Nexus server at nexus.wtax.co will be used. The `maven-repository-username` input should hold a valid username for this server and the `maven-repository-password` a valid (encrypted) password.
         required: false
         default: https://nexus.wtax.co/repository/maven-public/
+      maven-releases-repository-id:
+        type: string
+        description: ID of the Maven repository defined in the project's POM to which the artifact is to be released. This is used to generate the correct server entry holding the username and password for the repository in the Maven `settings.xml`.
+        required: false
+        default: nexus-releases
       maven-repository-username:
         type: string
         description: The username used to authenticate to the Maven repository specified in the `maven-repository-url` input.
@@ -33,9 +38,6 @@ on:
     secrets:
       maven-repository-password:
         description: Password for the Maven repository specified in the `maven-repository-url` corresponding to the `maven-repository-username`.
-        required: true
-      sonar-login:
-        description: Access token or username:password combination for the Sonar server specified in the `sonar-url` input.
         required: true
 
 jobs:
