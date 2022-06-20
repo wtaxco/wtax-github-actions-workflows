@@ -47,8 +47,22 @@ jobs:
       - name: maven-settings-xml-action
         uses: whelk-io/maven-settings-xml-action@v14
         with:
-          repositories: '[{ "id": "maven-repository", "name": "Maven Repository", "url": "${{ inputs.maven-repository-url }}" }]'
-          servers: '[{ "id": "maven-repository", "username": "${{ inputs.maven-repository-username }}", "password": "${{ secrets.maven-repository-password }}" }]'
+          repositories: |
+              [
+                { 
+                  "id": "maven-repository", 
+                  "name": "Maven Repository", 
+                  "url": "${{ inputs.maven-repository-url }}" 
+                }
+              ]
+          servers: |
+              [
+                { 
+                  "id": "maven-repository", 
+                  "username": "${{ inputs.maven-repository-username }}", 
+                  "password": "${{ secrets.maven-repository-password }}" 
+                }
+              ]
       - name: Cache CVE database for OWASP dependency-check
         uses: actions/cache@v3
         with:

@@ -10,7 +10,7 @@ to be passed in as secrets to the reusable workflow.
 | Name                      | Description                                                          |
 |---------------------------|----------------------------------------------------------------------|
 | `build-maven-project.yml` | Builds a Maven project, runs Sonar, and archives the build artifacts |
-|                           |                                                                      |
+| `maven-release.yml`       | Releases a Maven project to a Maven repository                       |
 
 ## Usage
 
@@ -41,3 +41,40 @@ jobs:
 | `maven-repository-password` | Secret         | `string` | Password for the Maven repository specified in the `maven-repository-url` corresponding to the `maven-repository-username`.                                                                                                                                                                                                                   |                                                |
 | `jdk-version`               | Input          | `string` | Version of the Zulu JDK to use to build the project. If omitted, defaults to 17.                                                                                                                                                                                                                                                              | 17                                             |
 
+#### Jobs
+
+This workflow has one job:
+- **build** - builds a Maven project, runs Sonar, and archives the build artifacts
+
+### `maven-release.yml`
+
+```yaml
+jobs:
+  release:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@1.0
+    with:
+      maven-repository-url: https://nexus.wtax.co/repository/maven-public/
+      maven-releases-repository-id: nexus-releases
+      maven-repository-username: github
+      jdk-version: 17
+    secrets:
+      maven-repository-password: ${{ secrets.NEXUS_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                           | Input / secret | Type     | Description                                                                                                                                                                                                                                                                                                                                   | Default                                        |
+|--------------------------------|----------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
+| `sonar-url`                    | Input          | `string` | URL of the Sonar server to use for analyzing the code. If omitted, the WTax Sonar server at sonar.wtax.co will be used. The `sonar-login` secret should hold a valid access token or username:password combination for this server.                                                                                                           | https://sonar.wtax.co                          |
+| `sonar-login`                  | Secret         | `string` | Access token or username:password combination for the Sonar server specified in the `sonar-url` input.                                                                                                                                                                                                                                        |                                                |
+| `maven-repository-url`         | Input          | `string` | URL of a Maven repository to use for retrieving artifacts that are not on Maven Central. If omitted, the maven-public repository on the WTax Nexus server at nexus.wtax.co will be used. The `maven-repository-username` input should hold a valid username for this server and the `maven-repository-password` a valid (encrypted) password. | https://nexus.wtax.co/repository/maven-public/ |
+| `maven-releases-repository-id` | Input          | `string` | ID of the Maven repository defined in the project's POM to which the artifact is to be released. This is used to generate the correct server entry holding the username and password for the repository in the Maven `settings.xml`.                                                                                                          | nexus-releases                                 |
+| `maven-repository-username`    | Input          | `string` | The username used to authenticate to the Maven repository specified in the `maven-repository-url` input as well as the Maven repository referenced by `maven-releases-repository-id`.                                                                                                                                                         | github                                         |
+| `maven-repository-password`    | Secret         | `string` | Password for the Maven repository specified in the `maven-repository-url` as well as the Maven repository referenced by `maven-releases-repository-id`, corresponding to the `maven-repository-username`.                                                                                                                                     |                                                |
+| `jdk-version`                  | Input          | `string` | Version of the Zulu JDK to use to build the project. If omitted, defaults to 17.                                                                                                                                                                                                                                                              | 17                                             |
+
+#### Jobs
+
+This workflow has two jobs:
+- **prepare_release** - prepares the release, assigning a release version and tagging the project in version control
+- **perform_release** - performs the release of the previously prepared release
