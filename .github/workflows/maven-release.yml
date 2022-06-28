@@ -60,6 +60,25 @@ jobs:
           java-version: ${{ inputs.jdk-version }}
           cache: maven
         if: github.event.inputs.skip-prepare != 'yes'
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v14
+        with:
+          repositories: |
+            [
+              {
+                "id": "maven-repository",
+                "name": "Maven Repository",
+                "url": "${{ inputs.maven-repository-url }}"
+              }
+            ]
+          servers: |
+            [
+              {
+                "id": "maven-repository",
+                "username": "${{ inputs.maven-repository-username }}",
+                "password": "${{ secrets.maven-repository-password }}" 
+              }
+            ]
       - name: Configure Git user
         run: |
           git config user.email "github-actions@wtax.co"
