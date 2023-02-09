@@ -17,8 +17,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      SALESFORCE_CONSUMER_ID: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
 
     steps:
       - name: check out code
@@ -32,20 +30,20 @@ jobs:
         with:
           node-version: 14.x
 
-      - name: install Salesforce CLI (sfdx)
-        run: npm list -g sfdx-cli || npm install -g sfdx-cli
-
       - name: write Ansible Vault password to file
-        run: echo "${{ secrets.VAULT_PASSWORD }}" >.vault-password
+        run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
 
       - name: decrypt the private key for the Continuous Integration connected app
-        run: ansible-vault decrypt --vault-password-file=.vault-password deploy/environments/prod/wtax--prod.key
+        run: ansible-vault decrypt --vault-password-file=.vault-password ${{ inputs.jwt-key-file }}
+
+      - name: install Salesforce CLI (sfdx)
+        run: npm list -g sfdx-cli || npm install -g sfdx-cli
 
       - name: connect to Dev Hub
         run: |
           sfdx auth:jwt:grant \
-              -i "${{ env.SALESFORCE_CONSUMER_ID }}" \
-              -f deploy/environments/prod/wtax--prod.key \
+              -i "${{ inputs.client-id }}" \
+              -f "${{ inputs.jwt-key-file }}" \
               -r https://login.salesforce.com \
               -u admin@wtax.co -d
 
