@@ -6,6 +6,11 @@ on:
         description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org
         required: false
         default: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
+      username:
+        type: string
+        description: username of Salesforce user to authenticate as; must have permission to create scratch orgs
+        required: false
+        default: admin@wtax.prod
       jwt-key-file:
         type: string
         description: Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow
@@ -45,7 +50,7 @@ jobs:
               -i "${{ inputs.client-id }}" \
               -f "${{ inputs.jwt-key-file }}" \
               -r https://login.salesforce.com \
-              -u admin@wtax.co -d
+              -u "${{ inputs.username }}" -d
 
       - name: create scratch org
         run: sfdx force:org:create -d 1 -s -f config/project-scratch-def.json
