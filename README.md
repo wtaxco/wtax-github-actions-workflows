@@ -7,15 +7,15 @@ to be passed in as secrets to the reusable workflow.
 
 ## Workflows
 
-| Name                      | Description                                                          |
-|---------------------------|----------------------------------------------------------------------|
-| `build-maven-project.yml` | Builds a Maven project, runs Sonar, and archives the build artifacts |
-| `maven-release.yml`       | Releases a Maven project to a Maven repository                       |
-| `deploy-java-app.yml`     | Deploys an executable JAR to an application server                   |
+| Name                                                                   | Description                                                          |
+|------------------------------------------------------------------------|----------------------------------------------------------------------|
+| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml) | Builds a Maven project, runs Sonar, and archives the build artifacts |
+| [`maven-release.yml`](.github/workflows/maven-release.yml)             | Releases a Maven project to a Maven repository                       |
+| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)         | Deploys an executable JAR to an application server                   |
 
 ## Usage
 
-### `build-maven-project.yml`
+### [`build-maven-project.yml`](.github/workflows/build-maven-project.yml)
 
 ```yaml
 jobs:
@@ -47,7 +47,7 @@ jobs:
 This workflow has one job:
 - **build** - builds a Maven project, runs Sonar, and archives the build artifacts
 
-### `maven-release.yml`
+### [`maven-release.yml`](.github/workflows/maven-release.yml)
 
 ```yaml
 jobs:
@@ -82,7 +82,7 @@ This workflow has two jobs:
 - **prepare_release** - prepares the release, assigning a release version and tagging the project in version control as `release/v<x.y.z>` where `<x.y.z>` is the release version.
 - **perform_release** - performs the release of the previously prepared release
 
-### `deploy-java-app.yml`
+### [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)
 
 ```yaml
 jobs:
