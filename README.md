@@ -166,11 +166,13 @@ jobs:
 
 #### Inputs and secrets
 
-| Name                     | Input / secret | Type     | Description                                                                                                                                                                                                                                           | Default    |
-|--------------------------|----------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
-| `client-id`               | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org  | 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
-| `jwt-key-file`            | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow | 
-| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                                                                                               |            |
+| Name                     | Input / secret | Type     | Description                                                                                                                                             | Default    |
+|--------------------------|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| `instance-url`           | Input          | `string` | Salesforce instance URL to log in to as Dev Hub org                                                                                                     | https://wtax.my.salesforce.com
+| `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org                                   | 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
+| `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to create scratch orgs                                                             | admin@wtax.prod
+| `jwt-key-file`           | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow                                | deploy/environments/prod/wtax-prod.key
+| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |            
 
 #### Jobs
 
