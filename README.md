@@ -156,7 +156,7 @@ This workflow has two jobs:
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.1
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.0
     with:
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
       jwt-key-file: deploy/env/prod/key.pem
