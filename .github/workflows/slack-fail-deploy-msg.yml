@@ -1,0 +1,36 @@
+on:
+  workflow_call:
+    secrets:
+      slack_webhook_url:
+        description: Slack Webhook URL stored in the project secrets.
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: 
+
+      - name: Send fail-deployment message to Slack
+        id: slack_fail_deploy_msg
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+              {
+                "blocks": [
+                  {
+                        "type": "header",
+                        "text": {
+                          "type": "plain_text",
+                          "text": ":x: Deployment Failed: ${{ github.repository }}",
+                          "emoji": true
+                        }
+                      },
+                      {
+                        "type": "divider"
+                      }
+                ]
+              }
+          env:
+            SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
+            SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+            
