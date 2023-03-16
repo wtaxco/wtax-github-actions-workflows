@@ -1,0 +1,59 @@
+on:
+  workflow_call:
+    secrets:
+      slack_webhook_url:
+        description: Slack Webhook URL stored in the project secrets.
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: 
+
+      - name: Send pre-deployment message to Slack
+          id: slack_pre_deployment_message
+          uses: slackapi/slack-github-action@v1.23.0
+          with:
+            payload: |
+                {
+                  "blocks": [
+                      {
+                        "type": "header",
+                        "text": {
+                          "type": "plain_text",
+                          "text": ":white_check_mark: Deployment to Prod Initiated :stopwatch:",
+                          "emoji": true
+                        }
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Repository:*\n${{ github.repository }}"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Deployed by:*\n${{ github.actor }}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Workflow:*\n${{ github.workflow }}"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<https://github.com/wtaxco|View on Github>"
+                          }
+                        ]
+                      }
+                  ]
+                }
+          env:
+            SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
+            SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+            
