@@ -67,6 +67,12 @@ jobs:
       - name: install dependencies
         run: sfdx texei:package:dependencies:install -w 15 -r
 
+      - name: run script
+        if: ${{ github.event.repository.name == 'wtax-clients'}} 
+        run:  |
+          echo "Repository name: ${{ github.event.repository.name }}"
+          sfdx apex run -f scripts/data_scripts/10.add_role_if_missing.apex
+
       - name: push sources to scratch org
         run: sfdx force:source:push -f
 
