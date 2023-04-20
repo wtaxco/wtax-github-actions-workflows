@@ -67,9 +67,8 @@ jobs:
       - name: install dependencies
         run: sfdx texei:package:dependencies:install -w 15 -r
 
-      - name: run script
-        run:  | 
-          echo "System.debug('Hello, world!');" | sfdx force:apex:execute
+      - name: run scripts
+        run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done
 
       - name: push sources to scratch org
         run: sfdx force:source:push -f
