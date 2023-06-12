@@ -39,7 +39,7 @@ jobs:
       - name: set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 14.x
+          node-version: 18.x
 
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
