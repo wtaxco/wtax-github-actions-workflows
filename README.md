@@ -200,13 +200,14 @@ jobs:
 
 #### Inputs and secrets
 
-| Name                     | Input / secret | Type     | Description                                                                                                                                             | Default |
-|--------------------------|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `instance-url`           | Input          | `string` | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
-| `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
-| `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
-| `jwt-key-file`           | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
-| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+| Name                     | Input / secret | Type      | Description                                                                                                                                             | Default |
+|--------------------------|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
+| `jwt-key-file`           | Input          | `string`  | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                    |         |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
 
 #### Jobs
 
