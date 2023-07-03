@@ -71,6 +71,12 @@ jobs:
       - name: install Salesforce CLI (sfdx)
         run: npm list -g sfdx-cli || npm install -g sfdx-cli
 
+      - name: download metadata ZIP file
+        uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: target
+
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
 
