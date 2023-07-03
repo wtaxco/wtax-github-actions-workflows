@@ -126,7 +126,7 @@ jobs:
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
       username: ${{ inputs.username }}
-      jwt-key-file: ${{ inputs.jwt-key-file }}
+      jwt-key-encrypted: ${{ inputs.jwt-key-encrypted }}
       run-tests: ${{ inputs.run-tests }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
