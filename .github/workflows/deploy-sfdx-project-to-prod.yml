@@ -1,0 +1,38 @@
+on:
+  workflow_call:
+    inputs:
+      instance-url:
+        type: string
+        description: Salesforce instance URL to log in to as Dev Hub org
+        required: false
+        default: https://login.salesforce.com
+      client-id:
+        type: string
+        description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org
+        required: false
+        default: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
+      username:
+        type: string
+        description: Username of Salesforce user to authenticate as; must have permission to create scratch orgs
+        required: false
+        default: admin@wtax.prod
+      jwt-key-file:
+        type: string
+        description: Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow
+        required: false
+        default: deploy/environments/prod/wtax-prod.key
+    secrets:
+      ansible-vault-password:
+        description: Password to be used to decrypt the `jwt-key-file`.
+        required: true
+jobs:
+  deploy:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.3.2
+    with:
+      instance-url: ${{ inputs.instance-url }}
+      client-id: ${{ inputs.client-id }}
+      username: ${{ inputs.username }}
+      jwt-key-file: ${{ inputs.jwt-key-file }}
+      run-tests: true
+    secrets:
+      ansible-vault-password: ${{ secrets.ansible-vault-password }}
