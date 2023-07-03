@@ -20,7 +20,7 @@ on:
         type: string
         description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
         required: false
-        default: >
+        default: |
             $ANSIBLE_VAULT;1.1;AES256
             30613236646138656239336131346233323661313864643939333131336638666434323937626334
             3533613234326666393565363638373363336662363736390a383332653239356566313632366634
