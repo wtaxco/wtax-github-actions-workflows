@@ -161,10 +161,7 @@ This workflow has two jobs:
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.3.0
-    with:
-      client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
-      jwt-key-file: deploy/env/prod/key.pem
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.4.0
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
@@ -175,8 +172,8 @@ jobs:
 |--------------------------|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
 | `instance-url`           | Input          | `string` | Salesforce instance URL to log in to as Dev Hub org                                                                                                     | https://wtax.my.salesforce.com                                                        |
 | `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org                                   | 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw |
+| `jwt-key-encrypted`      | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow                                | <<key for the connected app identified by client-id>>                                 |
 | `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to create scratch orgs                                                             | admin@wtax.prod                                                                       |
-| `jwt-key-file`           | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow                                | deploy/environments/prod/wtax-prod.key                                                |
 | `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |                                                                                       |
 
 #### Jobs
@@ -190,12 +187,16 @@ This workflow has one jobs:
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.3.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.4.0
     with:
       instance-url: https://login.salesforce.com
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
       username: admin@wtax.prod
-      jwt-key-file: deploy/env/prod/key.pem
+      jwt-key-encrypted: |
+          $ANSIBLE_VAULT;1.1;AES256
+          66626465343266336363626261646563303431326135373036343333386238323761373165346138
+          3164353437346165666439306165663635373364366233630a313361333534363735356665383262
+          63376636336462613066636.......
       run-tests: true
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
@@ -203,14 +204,14 @@ jobs:
 
 #### Inputs and secrets
 
-| Name                     | Input / secret | Type      | Description                                                                                                                                             | Default |
-|--------------------------|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
-| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
-| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
-| `jwt-key-file`           | Input          | `string`  | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
-| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                    |         |
-| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+| Name                     | Input / secret | Type      | Description                                                                                                                                                                        | Default |
+|--------------------------|----------------|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                                            |         |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                                               |         |
+| `jwt-key-encrypted`      | Input          | `string`  | Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!) |         |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                             |         |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                                               |         |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                            |         |
 
 #### Jobs
 
@@ -226,22 +227,21 @@ jobs:
   build:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-developer.yml@main
     with:
-      jwt-key-file: deploy/env/developer/key.pem
-      run-tests: ${{ github.event.inputs.run-tests == 'true'}}
+      run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
 
 #### Inputs and secrets
 
-| Name                     | Input / secret | Type      | Description                                                                                                                                             | Default |
-|--------------------------|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
-| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
-| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
-| `jwt-key-file`           | Input          | `string`  | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
-| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                    |         |
-| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+| Name                     | Input / secret | Type      | Description                                                                                                                                                                         | Default                                                                               |
+|--------------------------|----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                                             | https://login.salesforce.com                                                          |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                                                | 3MVG9mVMtbWMH6luwQZnh1UwupxQxoca6H4Yu0gvsxQS7_yo6HdV00CFOw60m0aJFr6FvvHx9CwsTjg5Ybi_T |
+| `jwt-key-encrypted`      | Input          | `string`  | Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!) | <<key for the connected app identified by client-id>>                                 |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                              | admin@wtax.prod.developer                                                             |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                                                | true                                                                                  |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                             |                                                                                       |
 
 #### Jobs
 
@@ -249,32 +249,115 @@ This workflow has on jobs:
 - **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the `developer` sandbox
 
 
-### [`deploy-sfdx-project-to-uat.yml`](.github/workflows/deploy-sfdx-project-to-uat.yml)
+### [`deploy-sfdx-project-to-portaldev.yml`](.github/workflows/deploy-sfdx-project-to-portaldev.yml)
 
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-developer.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-portaldev.yml@main
     with:
-      jwt-key-file: deploy/env/uat/key.pem
-      run-tests: ${{ github.event.inputs.run-tests == 'true'}}
+      run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
 
 #### Inputs and secrets
 
-| Name                     | Input / secret | Type      | Description                                                                                                                                             | Default |
-|--------------------------|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
-| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
-| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
-| `jwt-key-file`           | Input          | `string`  | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
-| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                    |         |
-| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+| Name                     | Input / secret | Type      | Description                                                                                                                                                                         | Default                                                                               |
+|--------------------------|----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                                             | https://test.salesforce.com                                                           |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                                                | 1c63CJDUKDLL2NGUFY583DNA.VVtm2f6.w8hOqPC3eY3of_1GNenYTWK2nQJv.OW9U6MqYrI_23BvN7rItrQV |
+| `jwt-key-encrypted`      | Input          | `string`  | Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!) | <<key for the connected app identified by client-id>>                                 |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                              | admin@wtax.prod.portaldev                                                             |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                                                | true                                                                                  |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                             |                                                                                       |
+
+#### Jobs
+
+This workflow has on jobs:
+- **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the `portaldev` sandbox
+
+
+### [`deploy-sfdx-project-to-portalqa.yml`](.github/workflows/deploy-sfdx-project-to-portalqa.yml)
+
+```yaml
+jobs:
+  build:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-portalqa.yml@main
+    with:
+      run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
+    secrets:
+      ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                     | Input / secret | Type      | Description                                                                                                                                                                         | Default                                                                               |
+|--------------------------|----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                                             | https://test.salesforce.com                                                           |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                                                | 3MVG9mVMtbWMH6luwQZnh1UwupxQxoca6H4Yu0gvsxQS7_yo6HdV00CFOw60m0aJFr6FvvHx9CwsTjg5Ybi_T |
+| `jwt-key-encrypted`      | Input          | `string`  | Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!) | <<key for the connected app identified by client-id>>                                 |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                              | admin@wtax.prod.portalqa                                                              |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                                                | true                                                                                  |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                             |                                                                                       |
+
+#### Jobs
+
+This workflow has on jobs:
+- **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the `portalqa` sandbox
+
+
+### [`deploy-sfdx-project-to-uat.yml`](.github/workflows/deploy-sfdx-project-to-uat.yml)
+
+```yaml
+jobs:
+  build:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-uat.yml@main
+    with:
+      run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
+    secrets:
+      ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                     | Input / secret | Type      | Description                                                                                                                                                                         | Default                                                                               |
+|--------------------------|----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                                             | https://test.salesforce.com                                                           |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                                                | 3MVG9hYFI5K4tx6Rji0DdwHNZZW5sYC_Yjf_JZwrEwAbMh0VE3EqlGYkw..nk5TrrCzvIjXCS0a5u08AO5qrt |
+| `jwt-key-encrypted`      | Input          | `string`  | Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!) | <<key for the connected app identified by client-id>>                                 |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                              | admin@wtax.prod.uat                                                                   |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                                                | true                                                                                  |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                             |                                                                                       |
 
 #### Jobs
 
 This workflow has on jobs:
 - **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the `uat` sandbox
+
+
+### [`deploy-sfdx-project-to-prod.yml`](.github/workflows/deploy-sfdx-project-to-prod.yml)
+
+```yaml
+jobs:
+  build:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-prod.yml@main
+    secrets:
+      ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                     | Input / secret | Type     | Description                                                                                                                                                                         | Default                                                                               |
+|--------------------------|----------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `instance-url`           | Input          | `string` | Salesforce instance URL to deploy to ("the target org")                                                                                                                             | https://login.salesforce.com                                                          |
+| `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                                                | 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw |
+| `jwt-key-encrypted`      | Input          | `string` | Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!) | <<key for the connected app identified by client-id>>                                 |
+| `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                              | admin@wtax.prod                                                                       |
+| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                             |                                                                                       |
+
+#### Jobs
+
+This workflow has on jobs:
+- **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the production org
 
