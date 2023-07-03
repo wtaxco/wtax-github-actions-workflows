@@ -23,7 +23,7 @@ to be passed in as secrets to the reusable workflow.
 ```yaml
 jobs:
   build-maven-project:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-maven-project.yml@1.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-maven-project.yml@1.3.0
     with:
       sonar-url: https://sonar.wtax.co
       maven-repository-url: https://nexus.wtax.co/repository/maven-public/
@@ -56,7 +56,7 @@ This workflow has one job:
 ```yaml
 jobs:
   release:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@1.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@1.3.0
     with:
       release-version: ${{ inputs.release-version }}
       skip-prepare: ${{ inputs.release-version }}
@@ -92,7 +92,7 @@ This workflow has two jobs:
 ```yaml
 jobs:
   release:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-java-app.yml@1.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-java-app.yml@1.3.0
     with:
       boot-jar: nexus-releases
       known_hosts: "app01.wtax.co,108.128.232.168 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPY2ffHZudZ/Hi0oXvEGxULMJ3UjukNvPOg2Q1KgG5IE4iOlGCAbx+h0PTNmmTSsoiK7q9O+x61FSHyvzUY/NyA="
@@ -125,7 +125,7 @@ This workflow has one jobs:
 ```yaml
 jobs:
   release:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@1.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@1.3.0
     with:
       release-version: ${{ inputs.release-version }}
       skip-prepare: ${{ inputs.release-version }}
@@ -161,7 +161,7 @@ This workflow has two jobs:
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.3.0
     with:
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
       jwt-key-file: deploy/env/prod/key.pem
@@ -190,7 +190,7 @@ This workflow has one jobs:
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.3.0
     with:
       instance-url: https://login.salesforce.com
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
@@ -217,4 +217,64 @@ jobs:
 This workflow has two jobs:
 - **build** - converts source to metadata and packages in a ZIP file that is then archived
 - **deploy** - downloads an archived metadata ZIP file, connects to a Salesforce org, and deploys the metadata to the org
+
+
+### [`deploy-sfdx-project-to-developer.yml`](.github/workflows/deploy-sfdx-project-to-developer.yml)
+
+```yaml
+jobs:
+  build:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-developer.yml@main
+    with:
+      jwt-key-file: deploy/env/developer/key.pem
+      run-tests: ${{ github.event.inputs.run-tests == 'true'}}
+    secrets:
+      ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                     | Input / secret | Type      | Description                                                                                                                                             | Default |
+|--------------------------|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
+| `jwt-key-file`           | Input          | `string`  | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                    |         |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+
+#### Jobs
+
+This workflow has on jobs:
+- **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the `developer` sandbox
+
+
+### [`deploy-sfdx-project-to-uat.yml`](.github/workflows/deploy-sfdx-project-to-uat.yml)
+
+```yaml
+jobs:
+  build:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-developer.yml@main
+    with:
+      jwt-key-file: deploy/env/uat/key.pem
+      run-tests: ${{ github.event.inputs.run-tests == 'true'}}
+    secrets:
+      ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                     | Input / secret | Type      | Description                                                                                                                                             | Default |
+|--------------------------|----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `instance-url`           | Input          | `string`  | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
+| `client-id`              | Input          | `string`  | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
+| `username`               | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
+| `jwt-key-file`           | Input          | `string`  | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
+| `run-tests`              | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                    |         |
+| `ansible-vault-password` | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+
+#### Jobs
+
+This workflow has on jobs:
+- **deploy** - calls the `deploy-sfdx-project.yml` workflow with sensible defaults for the inputs to deploy to the `uat` sandbox
 
