@@ -7,12 +7,13 @@ to be passed in as secrets to the reusable workflow.
 
 ## Workflows
 
-| Name                                                                   | Description                                                                 |
-|------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml) | Builds a Maven project, runs Sonar, and archives the build artifacts        |
-| [`maven-release.yml`](.github/workflows/maven-release.yml)             | Releases a Maven project to a Maven repository                              |
-| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)         | Deploys an executable JAR to an application server                          |
-| [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)   | Deploys source from a Salesforce DX project to a scratch org and runs tests |
+| Name                                                                                             | Description                                                                 |
+|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml)                           | Builds a Maven project, runs Sonar, and archives the build artifacts        |
+| [`maven-release.yml`](.github/workflows/maven-release.yml)                                       | Releases a Maven project to a Maven repository                              |
+| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)                                   | Deploys an executable JAR to an application server                          |
+| [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)                             | Deploys source from a Salesforce DX project to a scratch org and runs tests |
+| [`deploy-sfdx-project-to-developer.yml`](.github/workflows/deploy-sfdx-project-to-developer.yml) | Deploys an SFDX project's metadata to an org                                |
 
 
 ## Usage
@@ -49,6 +50,7 @@ jobs:
 This workflow has one job:
 - **build** - builds a Maven project, runs Sonar, and archives the build artifacts
 
+
 ### [`maven-release.yml`](.github/workflows/maven-release.yml)
 
 ```yaml
@@ -83,6 +85,7 @@ jobs:
 This workflow has two jobs:
 - **prepare_release** - prepares the release, assigning a release version and tagging the project in version control as `release/v<x.y.z>` where `<x.y.z>` is the release version.
 - **perform_release** - performs the release of the previously prepared release
+
 
 ### [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)
 
@@ -116,6 +119,7 @@ jobs:
 This workflow has one jobs:
 - **deploy** - runs the Ansible playbook to deploy the Java app to the application server(s) in the inventory
 
+
 ### [`maven-release.yml`](.github/workflows/maven-release.yml)
 
 ```yaml
@@ -151,6 +155,7 @@ This workflow has two jobs:
 - **prepare_release** - prepares the release, assigning a release version and tagging the project in version control as `release/v<x.y.z>` where `<x.y.z>` is the release version.
 - **perform_release** - performs the release of the previously prepared release
 
+
 ### [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)
 
 ```yaml
@@ -166,15 +171,46 @@ jobs:
 
 #### Inputs and secrets
 
-| Name                     | Input / secret | Type     | Description                                                                                                                                             | Default    |
-|--------------------------|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
-| `instance-url`           | Input          | `string` | Salesforce instance URL to log in to as Dev Hub org                                                                                                     | https://wtax.my.salesforce.com
-| `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org                                   | 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
-| `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to create scratch orgs                                                             | admin@wtax.prod
-| `jwt-key-file`           | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow                                | deploy/environments/prod/wtax-prod.key
-| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |            
+| Name                     | Input / secret | Type     | Description                                                                                                                                             | Default                                                                               |
+|--------------------------|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `instance-url`           | Input          | `string` | Salesforce instance URL to log in to as Dev Hub org                                                                                                     | https://wtax.my.salesforce.com                                                        |
+| `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org                                   | 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw |
+| `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to create scratch orgs                                                             | admin@wtax.prod                                                                       |
+| `jwt-key-file`           | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the Dev Hub org with using the JWT flow                                | deploy/environments/prod/wtax-prod.key                                                |
+| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |                                                                                       |
 
 #### Jobs
 
 This workflow has one jobs:
 - **build** - deploys source from a Salesforce DX project to a scratch org and runs tests
+
+
+### [`deploy-sfdx-project.yml`](.github/workflows/deploy-sfdx-project.yml)
+
+```yaml
+jobs:
+  build:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.0
+    with:
+      client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
+      jwt-key-file: deploy/env/prod/key.pem
+    secrets:
+      ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
+```
+
+#### Inputs and secrets
+
+| Name                     | Input / secret | Type     | Description                                                                                                                                             | Default |
+|--------------------------|----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `instance-url`           | Input          | `string` | Salesforce instance URL to deploy to ("the target org")                                                                                                 |         |
+| `client-id`              | Input          | `string` | OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org                                    |         |
+| `username`               | Input          | `string` | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                  |         |
+| `jwt-key-file`           | Input          | `string` | Path to an Ansible Vault-encrypted file containing the private key to connect to the target org with using the JWT flow                                 |         |
+| `ansible-vault-password` | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory. |         |
+
+#### Jobs
+
+This workflow has two jobs:
+- **build** - converts source to metadata and packages in a ZIP file that is then archived
+- **deploy** - downloads an archived metadata ZIP file, connects to a Salesforce org, and deploys the metadata to the org
+
