@@ -10,7 +10,7 @@ on:
         type: string
         description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org
         required: false
-        default: 3MVG9mVMtbWMH6luwQZnh1UwupxQxoca6H4Yu0gvsxQS7_yo6HdV00CFOw60m0aJFr6FvvHx9CwsTjg5Ybi_T
+        default: 7qNu2OoBRDB7ydducrP_8Uhhy69WhLfl1n7Z31tASDkfihO1C9D2S9xEKfKtCQuo9NaM59OW3LAZKFCCi20SW
       username:
         type: string
         description: Username of Salesforce user to authenticate as; must have permission to create scratch orgs
