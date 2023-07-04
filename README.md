@@ -7,19 +7,18 @@ to be passed in as secrets to the reusable workflow.
 
 ## Workflows
 
-| Name                                                                   | Description                                                                 |
-|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml) | Builds a Maven project, runs Sonar, and archives the build artifacts                           |
-| [`maven-release.yml`](.github/workflows/maven-release.yml)             | Releases a Maven project to a Maven repository                                                 |
-| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)         | Deploys an executable JAR to an application server                                             |
-| [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)   | Deploys source from a Salesforce DX project to a scratch org and runs tests                  |
-| [`deploy-sfdx-project.yml`](.github/workflows/deploy-sfdx-project.yml) | Deploys an SFDX project's metadata to an org                            
-                       |
-| [`deploy-sfdx-project-to-developer.yml`](.github/workflows/deploy-sfdx-project-to-developer.yml) | Deploys an SFDX project's metadata to the WTax developer sandbox |
-| [`deploy-sfdx-project-to-portaldev.yml`](.github/workflows/deploy-sfdx-project-to-portaldev.yml) | Deploys an SFDX project's metadata to the WTax portaldev sandbox |
-| [`deploy-sfdx-project-to-portalqa.yml`](.github/workflows/deploy-sfdx-project-to-portalqa.yml) | Deploys an SFDX project's metadata to the WTax portalqa sandbox       |
-| [`deploy-sfdx-project-to-uat.yml`](.github/workflows/deploy-sfdx-project-to-uat.yml) | Deploys an SFDX project's metadata to the WTax uat sandbox                |
-| [`deploy-sfdx-project-to-prod.yml`](.github/workflows/deploy-sfdx-project-to-prod.yml) | Deploys an SFDX project's metadata to the WTax production org         |
+| Name                                                                                             | Description                                                                 |
+|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml)                           | Builds a Maven project, runs Sonar, and archives the build artifacts        |
+| [`maven-release.yml`](.github/workflows/maven-release.yml)                                       | Releases a Maven project to a Maven repository                              |
+| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)                                   | Deploys an executable JAR to an application server                          |
+| [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)                             | Deploys source from a Salesforce DX project to a scratch org and runs tests |
+| [`deploy-sfdx-project.yml`](.github/workflows/deploy-sfdx-project.yml)                           | Deploys an SFDX project's metadata to an org                                |
+| [`deploy-sfdx-project-to-developer.yml`](.github/workflows/deploy-sfdx-project-to-developer.yml) | Deploys an SFDX project's metadata to the WTax developer sandbox            |
+| [`deploy-sfdx-project-to-portaldev.yml`](.github/workflows/deploy-sfdx-project-to-portaldev.yml) | Deploys an SFDX project's metadata to the WTax portaldev sandbox            |
+| [`deploy-sfdx-project-to-portalqa.yml`](.github/workflows/deploy-sfdx-project-to-portalqa.yml)   | Deploys an SFDX project's metadata to the WTax portalqa sandbox             |
+| [`deploy-sfdx-project-to-uat.yml`](.github/workflows/deploy-sfdx-project-to-uat.yml)             | Deploys an SFDX project's metadata to the WTax uat sandbox                  |
+| [`deploy-sfdx-project-to-prod.yml`](.github/workflows/deploy-sfdx-project-to-prod.yml)           | Deploys an SFDX project's metadata to the WTax production org               |
 
 
 ## Usage
