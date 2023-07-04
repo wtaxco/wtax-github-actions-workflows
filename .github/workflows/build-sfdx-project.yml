@@ -132,7 +132,7 @@ jobs:
           node-version: 18.x
 
       - name: write encrypted JWT key to file
-        run: echo "${{ inputs.jwt-key-encrypted }}" >.jwt-key
+        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
 
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
