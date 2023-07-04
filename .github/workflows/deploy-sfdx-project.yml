@@ -86,7 +86,7 @@ jobs:
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
 
-      - name: connect to developer sandbox
+      - name: connect to org
         run: |
           sfdx auth:jwt:grant \
               -i "${{ inputs.client-id }}" \
