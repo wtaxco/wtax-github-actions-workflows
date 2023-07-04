@@ -166,7 +166,7 @@ This workflow has two jobs:
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.4.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@1.4.4
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
@@ -192,7 +192,7 @@ This workflow has one jobs:
 ```yaml
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.4.2
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.4.4
     with:
       instance-url: https://login.salesforce.com
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
