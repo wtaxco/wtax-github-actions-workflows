@@ -16,7 +16,7 @@ on:
         description: Username of Salesforce user to authenticate as; must have permission to create scratch orgs
         required: false
         default: admin@wtax.prod.uat
-      jwt-key:
+      jwt-key-encrypted:
         type: string
         description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
         required: false
