@@ -8,12 +8,18 @@ to be passed in as secrets to the reusable workflow.
 ## Workflows
 
 | Name                                                                   | Description                                                                 |
-|------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml) | Builds a Maven project, runs Sonar, and archives the build artifacts        |
-| [`maven-release.yml`](.github/workflows/maven-release.yml)             | Releases a Maven project to a Maven repository                              |
-| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)         | Deploys an executable JAR to an application server                          |
-| [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)   | Deploys source from a Salesforce DX project to a scratch org and runs tests |
-| [`deploy-sfdx-project.yml`](.github/workflows/deploy-sfdx-project.yml) | Deploys an SFDX project's metadata to an org                                |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`build-maven-project.yml`](.github/workflows/build-maven-project.yml) | Builds a Maven project, runs Sonar, and archives the build artifacts                           |
+| [`maven-release.yml`](.github/workflows/maven-release.yml)             | Releases a Maven project to a Maven repository                                                 |
+| [`deploy-java-app.yml`](.github/workflows/deploy-java-app.yml)         | Deploys an executable JAR to an application server                                             |
+| [`build-sfdx-project.yml`](.github/workflows/build-sfdx-project.yml)   | Deploys source from a Salesforce DX project to a scratch org and runs tests                  |
+| [`deploy-sfdx-project.yml`](.github/workflows/deploy-sfdx-project.yml) | Deploys an SFDX project's metadata to an org                            
+                       |
+| [`deploy-sfdx-project-to-developer.yml`](.github/workflows/deploy-sfdx-project-to-developer.yml) | Deploys an SFDX project's metadata to the WTax developer sandbox |
+| [`deploy-sfdx-project-to-portaldev.yml`](.github/workflows/deploy-sfdx-project-to-portaldev.yml) | Deploys an SFDX project's metadata to the WTax portaldev sandbox |
+| [`deploy-sfdx-project-to-portalqa.yml`](.github/workflows/deploy-sfdx-project-to-portalqa.yml) | Deploys an SFDX project's metadata to the WTax portalqa sandbox       |
+| [`deploy-sfdx-project-to-uat.yml`](.github/workflows/deploy-sfdx-project-to-uat.yml) | Deploys an SFDX project's metadata to the WTax uat sandbox                |
+| [`deploy-sfdx-project-to-prod.yml`](.github/workflows/deploy-sfdx-project-to-prod.yml) | Deploys an SFDX project's metadata to the WTax production org         |
 
 
 ## Usage
@@ -186,17 +192,17 @@ This workflow has one jobs:
 
 ```yaml
 jobs:
-  build:
+  deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.4.2
     with:
       instance-url: https://login.salesforce.com
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
-      username: admin@wtax.prod
       jwt-key-encrypted: |
           $ANSIBLE_VAULT;1.1;AES256
           66626465343266336363626261646563303431326135373036343333386238323761373165346138
           3164353437346165666439306165663635373364366233630a313361333534363735356665383262
           63376636336462613066636.......
+      username: admin@wtax.prod
       run-tests: true
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
@@ -224,7 +230,7 @@ This workflow has two jobs:
 
 ```yaml
 jobs:
-  build:
+  deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-developer.yml@main
     with:
       run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
@@ -253,7 +259,7 @@ This workflow has on jobs:
 
 ```yaml
 jobs:
-  build:
+  deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-portaldev.yml@main
     with:
       run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
@@ -282,7 +288,7 @@ This workflow has on jobs:
 
 ```yaml
 jobs:
-  build:
+  deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-portalqa.yml@main
     with:
       run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
@@ -311,7 +317,7 @@ This workflow has on jobs:
 
 ```yaml
 jobs:
-  build:
+  deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-uat.yml@main
     with:
       run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
@@ -340,7 +346,7 @@ This workflow has on jobs:
 
 ```yaml
 jobs:
-  build:
+  deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-prod.yml@main
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
