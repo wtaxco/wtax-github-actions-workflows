@@ -169,6 +169,7 @@ jobs:
         run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
 
       - name: decrypt the installation key
+        id: installation-key
         run: echo "decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt) >>$GITHUB_OUTPUT
 
       - name: create package version
