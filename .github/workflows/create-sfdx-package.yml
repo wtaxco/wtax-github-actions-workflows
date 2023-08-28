@@ -166,7 +166,7 @@ jobs:
         run: jq -r '"name=" + (.packageDirectories[]|select(.path=="force-app")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
 
       - name: write encrypted installation key to file
-        run: echo "${{ inputs.installation-key-encrypted }}" >installation-key.txt
+        run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
 
       - name: decrypt the installation key
         run: echo "decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt) >>$GITHUB_OUTPUT
