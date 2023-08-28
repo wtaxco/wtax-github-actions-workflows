@@ -171,9 +171,6 @@ jobs:
       - name: decrypt the installation key
         run: echo "decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt) >>$GITHUB_OUTPUT
 
-      - name: decrypt installation key
-        run: echo "decrypted="$(echo "${{ inputs.installation-key-encrypted }}">installation-key.txt && ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt) >>$GITHUB_OUTPUT
-
       - name: create package version
         id: create-package-version
         run: set -o pipefail; sfdx package version create --package "${{ steps.package-info.outputs.name }}" --tag "Git commit ${{ github.sha }}" --code-coverage --installation-key "${{ steps.installation-key.outputs.decrypted }}" -w 60 --json | tee output.json
