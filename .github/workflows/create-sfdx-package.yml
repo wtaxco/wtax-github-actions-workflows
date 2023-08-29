@@ -12,6 +12,11 @@ on:
             62313437626230323039313033636533303636613036663030316462666638366233363832613638
             6566386233623363300a343538386131373737616539333666343263323932356637396336386635
             3136
+      promote:
+        type: boolean
+        description: Whether to promote the package version to released after creating it.
+        required: false
+        default: false
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -193,6 +198,10 @@ jobs:
 
       - name: install package
         run: sfdx package install --package "${{ steps.package-version.outputs.id }}" --installation-key "${installation_key_decrypted}" -w 15
+
+      - name: promote package
+        run: sfdx package version promote --package "${{ steps.package-version.outputs.id }}" --no-prompt
+        if: ${{ inputs.promote }}
 
       - name: delete scratch org
         run: sfdx org delete scratch -p
