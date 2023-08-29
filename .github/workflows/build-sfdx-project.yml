@@ -144,17 +144,18 @@ jobs:
 
       - name: connect to Dev Hub
         run: |
-          sfdx auth:jwt:grant \
-              -i "${{ inputs.client-id }}" \
-              -f .jwt-key \
-              -r "${{ inputs.instance-url }}" \
-              -u "${{ inputs.username }}" -d
+          sfdx auth jwt grant \
+              --client-id="${{ inputs.client-id }}" \
+              --jwt-key-file=.jwt-key \
+              --instance-url="${{ inputs.instance-url }}" \
+              --username="${{ inputs.username }}" \
+              --set-default-dev-hub
 
       - name: create scratch org
-        run: sfdx force:org:create -d 1 -s -f config/project-scratch-def.json
+        run: sfdx org create scratch -w 5 -f config/project-scratch-def.json -d -y 1
 
       - name: install texei plugin
-        run: echo y | sfdx plugins:install texei-sfdx-plugin
+        run: echo y | sfdx plugins install texei-sfdx-plugin
 
       - name: install dependencies
         run: sfdx texei:package:dependencies:install -w 15 -r
@@ -166,7 +167,7 @@ jobs:
         run: sfdx force:source:push -f
 
       - name: run unit tests
-        run: sfdx force:apex:test:run -l RunLocalTests -y
+        run: sfdx apex run test -l RunLocalTests --synchronous --code-coverage
 
       - name: package the source as metadata
         run: ./build.sh target/${{ github.event.repository.name }}-${{ github.sha }}.zip
@@ -178,5 +179,5 @@ jobs:
           path: target/${{ github.event.repository.name }}-${{ github.sha }}.zip
 
       - name: delete scratch org
-        run: sfdx force:org:delete -p
+        run: sfdx org delete scratch -p
         if: always()

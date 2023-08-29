@@ -88,12 +88,12 @@ jobs:
 
       - name: connect to org
         run: |
-          sfdx auth:jwt:grant \
-              -i "${{ inputs.client-id }}" \
-              -f .jwt-key \
-              -r ${{ inputs.instance-url }} \
-              -o ${{ inputs.username }} \
-              -s
+          sfdx auth jwt grant \
+              --client-id="${{ inputs.client-id }}" \
+              --jwt-key-file=.jwt-key \
+              --instance-url=${{ inputs.instance-url }} \
+              --username=${{ inputs.username }} \
+              --set-default
 
       - name: deploy to org and run Apex tests
         if: ${{ inputs.run-tests }}
