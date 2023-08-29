@@ -1,0 +1,117 @@
+on:
+  workflow_call:
+    inputs:
+      package:
+        type: string
+        description: Id of the package version to install. Must start with 04t. Either this or `version-number` must be specified.
+        default: ''
+        required: false
+      version-number:
+        type: string
+        description: Version number of the package version to install, specified as major.minor.patch, without the build number, e.g. 1.0.1. Either this or `package` must be specified. The build number will be determined by finding a released package with the given major, minor, and patch versions. `version-number` is ignored if `package` is also specified.
+        default: ''
+        required: false
+      installation-key-encrypted:
+        type: string
+        description: Ansible Vault-encrypted installation key to protect the package version with (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: false
+        default: |
+            $ANSIBLE_VAULT;1.1;AES256
+            34396439636233376162626134303731343263616433666433646366363835613332663235613638
+            3336366330616437356539653733393735323338336461360a333837326133653231373531363161
+            62313437626230323039313033636533303636613036663030316462666638366233363832613638
+            6566386233623363300a343538386131373737616539333666343263323932356637396336386635
+            3136
+      instance-url:
+        type: string
+        description: Salesforce instance URL of the target org
+        required: true
+      client-id:
+        type: string
+        description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org
+        required: true
+      jwt-key-encrypted:
+        type: string
+        description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: true
+      username:
+        type: string
+        description: Username of Salesforce user to authenticate as on the target org
+        required: true
+    secrets:
+      ansible-vault-password:
+        description: Password to be used to decrypt the `jwt-key-encrypted`.
+        required: true
+jobs:
+  install-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: check out code (sfdx-project.json only)
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: sfdx-project.json
+
+      - name: install jq
+        run: sudo apt-get install -y jq
+
+      - name: set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18.x
+
+      - name: write encrypted JWT key to file
+        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
+
+      - name: write Ansible Vault password to file
+        run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
+
+      - name: decrypt the private key for the Continuous Integration connected app
+        run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
+
+      - name: install Salesforce CLI (sfdx)
+        run: npm list -g sfdx-cli || npm install -g sfdx-cli
+
+      - name: connect to org
+        run: |
+          sfdx auth jwt grant \
+              --client-id="${{ inputs.client-id }}" \
+              --jwt-key-file=.jwt-key \
+              --instance-url=${{ inputs.instance-url }} \
+              --username=${{ inputs.username }} \
+              --set-default
+
+      - name: find package name
+        id: package-info
+        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="force-app")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
+
+      - name: write encrypted installation key to file
+        run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
+
+      - name: decrypt the installation key
+        run: echo "installation_key_decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt) >>$GITHUB_ENV
+
+      - name: tell GitHub Actions to mask the installation key in the log
+        run: echo "::add-mask::${installation_key_decrypted}"
+
+      - name: list package versions
+        id: package-versions
+        run: set -o pipefail; sfdx package version list --packages "${{ steps.package-info.outputs.name }}" --json | tee package-versions.json
+
+      - name: find package by id
+        run:
+          echo package=${{ inputs.package }} >>$GITHUB_ENV
+        if: inputs.package != ''
+
+      - name: find package by version number
+        run:
+          versionNumberJQEscaped=$(echo -n '$(( inputs.version-number }}' | sed -e 's/\./\\\\./g')
+          echo package=$(cat output.json | jq -r '.result|map(select((.Version|test("^'${versionNumberJQEscaped}'\\.")) and .IsReleased))[].SubscriberPackageVersionId') >>$GITHUB_ENV
+        if: env.package == ''
+
+      - name: install package
+        run: sfdx package install --package "${{ env.package }}" --installation-key "${installation_key_decrypted}" -w 15
+
+      - name: delete scratch org
+        run: sfdx org delete scratch -p
+        if: always()
