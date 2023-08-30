@@ -228,7 +228,7 @@ jobs:
 
       - name: find package by version number
         run: |
-          versionNumberJQEscaped=$(echo -n '$(( inputs.version-number }}' | sed -e 's/\./\\\\./g')
+          versionNumberJQEscaped=$(echo -n '${{ inputs.version-number }}' | sed -e 's/\./\\\\./g')
           echo package=$(cat package-versions.json | jq -r '.result|map(select((.Version|test("^'${versionNumberJQEscaped}'\\.")) and .IsReleased))[].SubscriberPackageVersionId') >>$GITHUB_ENV
         if: env.package == ''
 
