@@ -172,13 +172,13 @@ jobs:
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
 
-      - name: write encrypted JWT key to file
+      - name: write encrypted private key for the Continuous Integration connected app to file
         run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
 
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
 
-      - name: write encrypted JWT key to file
+      - name: write encrypted private key for the DevHub Continuous Integration connected app to file
         run: echo '${{ inputs.devhub-jwt-key-encrypted }}' >.devhub-jwt-key
 
       - name: decrypt the private key for the DevHub Continuous Integration connected app
@@ -230,7 +230,7 @@ jobs:
       - name: find package by version number
         run:
           versionNumberJQEscaped=$(echo -n '$(( inputs.version-number }}' | sed -e 's/\./\\\\./g')
-          echo package=$(cat output.json | jq -r '.result|map(select((.Version|test("^'${versionNumberJQEscaped}'\\.")) and .IsReleased))[].SubscriberPackageVersionId') >>$GITHUB_ENV
+          echo package=$(cat package-versions.json | jq -r '.result|map(select((.Version|test("^'${versionNumberJQEscaped}'\\.")) and .IsReleased))[].SubscriberPackageVersionId') >>$GITHUB_ENV
         if: env.package == ''
 
       - name: install package
