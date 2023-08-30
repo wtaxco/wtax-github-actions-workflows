@@ -223,18 +223,17 @@ jobs:
         run: set -o pipefail; sfdx package version list --packages "${{ steps.package-info.outputs.name }}" --json | tee package-versions.json
 
       - name: find package by id
-        run:
-          echo package=${{ inputs.package }} >>$GITHUB_ENV
+        run: echo package=${{ inputs.package }} >>$GITHUB_ENV
         if: inputs.package != ''
 
       - name: find package by version number
-        run:
+        run: |
           versionNumberJQEscaped=$(echo -n '$(( inputs.version-number }}' | sed -e 's/\./\\\\./g')
           echo package=$(cat package-versions.json | jq -r '.result|map(select((.Version|test("^'${versionNumberJQEscaped}'\\.")) and .IsReleased))[].SubscriberPackageVersionId') >>$GITHUB_ENV
         if: env.package == ''
 
       - name: install package
-        run: sfdx package install --package "${{ env.package }}" --installation-key "${installation_key_decrypted}" -w 15
+        run: sfdx package install --package "${package}" --installation-key "${installation_key_decrypted}" -w 15
 
       - name: delete scratch org
         run: sfdx org delete scratch -p
