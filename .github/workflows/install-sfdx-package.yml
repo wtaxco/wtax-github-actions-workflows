@@ -172,10 +172,13 @@ jobs:
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
 
+      - name: write encrypted JWT key to file
+        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
+
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
 
-      - name: write encrypted DevHub JWT key to file
+      - name: write encrypted JWT key to file
         run: echo '${{ inputs.devhub-jwt-key-encrypted }}' >.devhub-jwt-key
 
       - name: decrypt the private key for the DevHub Continuous Integration connected app
