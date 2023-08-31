@@ -122,7 +122,7 @@ on:
         required: true
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@1.4.2
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
     with:
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
