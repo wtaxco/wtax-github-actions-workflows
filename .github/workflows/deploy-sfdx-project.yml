@@ -100,5 +100,5 @@ jobs:
         run: TERM=xterm ./deploy.sh -x -f target/${{ github.event.repository.name }}-${{ github.sha }}.zip -w 60 -d -t
 
       - name: deploy to org without running Apex tests
-        if: !inputs.run-tests
+        if: ! (inputs.run-tests)
         run: TERM=xterm ./deploy.sh -x -f target/${{ github.event.repository.name }}-${{ github.sha }}.zip -w 60 -d
