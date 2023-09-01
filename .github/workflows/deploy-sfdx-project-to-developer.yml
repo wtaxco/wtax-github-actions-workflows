@@ -120,6 +120,7 @@ on:
         required: true
 jobs:
   debug:
+    runs-on: ubuntu-latest
     steps:
       - name: print out inputs (for debugging purposes)
         run: |
