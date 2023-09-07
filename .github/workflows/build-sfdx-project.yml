@@ -111,6 +111,7 @@ on:
         required: false
         default: admin@wtax.prod
       texei-installation-keys-encrypted:
+        type: string
         description: 'Parameter to be passed as the value of the `--installationkeys` option of the `texei:package:dependencies:install` command. It should contain the installation keys of password-protected packages in the order in which they appear in sfdx-project.json, e.g. "1:MyPackage1Key 2: 3:MyPackage3Key". See https://github.com/texei/texei-sfdx-plugin for more information. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)'
         required: false
     secrets:
