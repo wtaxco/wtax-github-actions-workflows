@@ -110,9 +110,12 @@ on:
         description: Username of Salesforce user to authenticate as on the Dev Hub org; must have permission to create scratch orgs
         required: false
         default: admin@wtax.prod
+      texei-installation-keys-encrypted:
+        description: 'Parameter to be passed as the value of the `--installationkeys` option of the `texei:package:dependencies:install` command. It should contain the installation keys of password-protected packages in the order in which they appear in sfdx-project.json, e.g. "1:MyPackage1Key 2: 3:MyPackage3Key". See https://github.com/texei/texei-sfdx-plugin for more information. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)'
+        required: false
     secrets:
       ansible-vault-password:
-        description: Password to be used to decrypt the `jwt-key-encrypted`.
+        description: Password to be used to decrypt the `jwt-key-encrypted` and `texei-installation-keys`.
         required: true
 jobs:
   build:
@@ -157,8 +160,25 @@ jobs:
       - name: install texei plugin
         run: echo y | sfdx plugins install texei-sfdx-plugin
 
-      - name: install dependencies
+      - name: write encrypted installation keys to file
+        run: echo '${{ inputs.texei-installation-keys-encrypted }}' >texei-installation-keys.txt
+        if: ${{ inputs.texei-installation-keys-encrypted != '' }}
+
+      - name: decrypt the installation keys
+        run: echo "texei_installation_keys_decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - texei-installation-keys.txt) >>$GITHUB_ENV
+        if: ${{ inputs.texei-installation-keys-encrypted != '' }}
+
+      - name: tell GitHub Actions to mask the installation keys in the log
+        run: echo "::add-mask::${texei_installation_keys_decrypted}"
+        if: ${{ inputs.texei-installation-keys-encrypted != '' }}
+
+      - name: install dependencies (without installation keys)
         run: sfdx texei:package:dependencies:install -w 15 -r
+        if: ${{ inputs.texei-installation-keys-encrypted == ''}}
+
+      - name: install dependencies (with installation keys)
+        run: sfdx texei:package:dependencies:install -w 15 -r --installation-keys="${texei_installation_keys_decrypted}"
+        if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
       - name: run scripts
         run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done || echo "No pre-test scripts to run."
