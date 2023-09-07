@@ -178,7 +178,7 @@ jobs:
         if: ${{ inputs.texei-installation-keys-encrypted == ''}}
 
       - name: install dependencies (with installation keys)
-        run: sfdx texei:package:dependencies:install -w 15 -r --installation-keys="${texei_installation_keys_decrypted}"
+        run: sfdx texei:package:dependencies:install -w 15 -r --installationkeys="${texei_installation_keys_decrypted}"
         if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
       - name: run scripts
