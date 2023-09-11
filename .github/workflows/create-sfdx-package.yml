@@ -211,9 +211,7 @@ jobs:
       - name: run package version report
         run: |
           echo "## Package version report for ${{ steps.package-info.outputs.name }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
           sfdx package version report -p ${{ steps.package-version.outputs.id }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: delete scratch org
         run: sfdx org delete scratch -p
