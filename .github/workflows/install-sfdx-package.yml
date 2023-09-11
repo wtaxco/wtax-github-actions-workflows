@@ -240,7 +240,3 @@ jobs:
 
       - name: install package
         run: sfdx package install --package "${package}" --installation-key "${installation_key_decrypted}" -w 15
-
-      - name: delete scratch org
-        run: sfdx org delete scratch -p
-        if: always()
