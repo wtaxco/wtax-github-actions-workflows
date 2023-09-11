@@ -11,6 +11,11 @@ on:
         description: Version number of the package version to install, specified as major.minor.patch, without the build number, e.g. 1.0.1. Either this or `package` must be specified. The build number will be determined by finding a released package with the given major, minor, and patch versions. `version-number` is ignored if `package` is also specified.
         default: ''
         required: false
+      source-directory:
+        type: string
+        description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
+        required: false
+        default: force-app
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -130,6 +135,7 @@ jobs:
     with:
       package: ${{ inputs.package }}
       version-number: ${{ inputs.version-number }}
+      source-directory: ${{ inputs.source-directory }}
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
       username: ${{ inputs.username }}
