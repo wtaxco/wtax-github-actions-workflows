@@ -8,6 +8,11 @@ on:
       version-number:
         type: string
         description: Version number of the package version to promote, specified as major.minor.patch.build, e.g. 1.0.1.2. Either this or `package` must be specified.
+      source-directory:
+        type: string
+        description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
+        required: false
+        default: force-app
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -162,7 +167,7 @@ jobs:
 
       - name: find package name
         id: package-info
-        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="force-app")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
+        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="${{ inputs.source-directory }}")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
 
       - name: list package versions
         id: package-versions

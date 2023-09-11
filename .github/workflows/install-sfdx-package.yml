@@ -11,6 +11,11 @@ on:
         description: Version number of the package version to install, specified as major.minor.patch, without the build number, e.g. 1.0.1. Either this or `package` must be specified. The build number will be determined by finding a released package with the given major, minor, and patch versions. `version-number` is ignored if `package` is also specified.
         default: ''
         required: false
+      source-directory:
+        type: string
+        description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
+        required: false
+        default: force-app
       installation-key-encrypted:
         type: string
         description: Ansible Vault-encrypted installation key to protect the package version with (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
@@ -205,10 +210,6 @@ jobs:
               --username=${{ inputs.username }} \
               --set-default
 
-      - name: find package name
-        id: package-info
-        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="force-app")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
-
       - name: write encrypted installation key to file
         run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
 
@@ -218,9 +219,14 @@ jobs:
       - name: tell GitHub Actions to mask the installation key in the log
         run: echo "::add-mask::${installation_key_decrypted}"
 
+      - name: find package name
+        id: package-info
+        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="${{ inputs.source-directory }}")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
+        if: inputs.package == ''
+
       - name: list package versions
-        id: package-versions
         run: set -o pipefail; sfdx package version list --packages "${{ steps.package-info.outputs.name }}" --json | tee package-versions.json
+        if: inputs.package == ''
 
       - name: find package by id
         run: echo package=${{ inputs.package }} >>$GITHUB_ENV

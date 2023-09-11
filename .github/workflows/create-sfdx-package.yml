@@ -1,6 +1,11 @@
 on:
   workflow_call:
     inputs:
+      source-directory:
+        type: string
+        description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
+        required: false
+        default: force-app
       installation-key-encrypted:
         type: string
         description: Ansible Vault-encrypted installation key to protect the package version with (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
@@ -169,7 +174,7 @@ jobs:
 
       - name: find package name
         id: package-info
-        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="force-app")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
+        run: jq -r '"name=" + (.packageDirectories[]|select(.path=="${{ inputs.source-directory }}")|.package)' <sfdx-project.json >>$GITHUB_OUTPUT
 
       - name: write encrypted installation key to file
         run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
