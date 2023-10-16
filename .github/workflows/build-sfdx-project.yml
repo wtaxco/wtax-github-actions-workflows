@@ -156,7 +156,10 @@ jobs:
               --set-default-dev-hub
 
       - name: create scratch org
-        run: sfdx org create scratch -w 5 -f config/project-scratch-def.json -d -y 1
+        run: sfdx org create scratch -w 5 -f config/project-scratch-def.json -d -y 1 --set-default
+
+      - name: generate password
+        run:  sfdx force user password generate
 
       - name: install texei plugin
         run: echo y | sfdx plugins install texei-sfdx-plugin
@@ -199,6 +202,6 @@ jobs:
           name: artifact
           path: target/${{ github.event.repository.name }}-${{ github.sha }}.zip
 
-      - name: delete scratch org
-        run: sfdx org delete scratch -p
-        if: always()
+      #- name: delete scratch org
+      #  run: sfdx org delete scratch -p
+      #  if: always()
