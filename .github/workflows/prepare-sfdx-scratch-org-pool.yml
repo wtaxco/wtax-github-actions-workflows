@@ -1,0 +1,86 @@
+name: Prepare Pools
+on:
+  workflow_call:
+    inputs:
+      instance-url:
+        type: string
+        description: Salesforce instance URL of the target org
+        required: false
+        default: https://login.salesforce.com
+      sfdx-auth-url-encrypted:
+        type: string
+        description: Login url
+        required: false
+        default: |
+          $ANSIBLE_VAULT;1.1;AES256
+          63646561646532613365666638363262306439623534326435306563653134616436366231623764
+          6635376230353639666334373538326664333632333430350a376639306333333839396239383361
+          31653133373535653665393461666664376266373066393330306333383763653364656364333331
+          3533316235616564370a633230316362326666303162323230383539626532386131313433303361
+          36663735363863343664376437323764333331306633333361356165623764613263666232323239
+          39303462363139346363616135383166663534386534313335343639616234373933646437376531
+          61313465366665313132363166336266333065613334376332323233376633613263393066613964
+          37303461316562633432333230383862306531663232333863383061646335373232666362626536
+          64313362653932386531656162396636376632383532653666303636666232383531316363636335
+          63653666626635353863633038616463366433353662333636633161656230613134303931636566
+          626239393631633836326663366435356265
+
+    secrets:
+      ansible-vault-password:
+        description: Password to be used to decrypt the `jwt-key-encrypted`.
+        required: true
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: print out inputs (for debugging purposes)
+        run: |
+          echo 'inputs.instance-url = ${{ inputs.instance-url }}' 
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+
+      - name: install jq
+        run: sudo apt-get install -y jq
+
+      - name: set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18.x
+
+      - name: install Salesforce CLI (sf)
+        run: npm install -g @salesforce/cli
+
+      - name: create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[
+                 "@dxatscale/sfpowerscripts"
+                ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: install sfpowerscripts plugin
+        run: sf plugins install @dxatscale/sfpowerscripts
+
+      - name: write Ansible Vault password to file
+        run: echo '${{ secrets.ansible-vault-password }}' >.vault-password
+
+      - name: write encrypted auth url to file
+        run: echo '${{ inputs.sfdx-auth-url-encrypted }}' >sfdxAuthUrl.txt
+
+      - name: decrypt the sfdx auth url
+        run: ansible-vault decrypt --vault-password-file=.vault-password sfdxAuthUrl.txt
+
+      - name: connect to org with sfdxurl:store
+        run: |
+          sfdx auth:sfdxurl:store \
+          --sfdx-url-file sfdxAuthUrl.txt \
+          --alias OrgPool \
+          --setdefaultusername \
+          --setdefaultdevhubusername \
+          --json
+
+      - name: prepare scratch org pool
+        run: sf orchestrator prepare -v OrgPool --loglevel debug
