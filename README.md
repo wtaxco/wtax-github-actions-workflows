@@ -372,7 +372,7 @@ This workflow has one job:
 ```yaml
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/prepare-sfdx-scratch-org-pool.yml@dev
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/prepare-sfdx-scratch-org-pool.yml@main
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
