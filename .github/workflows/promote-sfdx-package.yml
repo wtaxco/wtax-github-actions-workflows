@@ -184,7 +184,7 @@ jobs:
         if: env.package == ''
 
       - name: promote package
-        run: sfdx package version promote --package "${{ steps.package-version.outputs.id }}" --no-prompt
+        run: sfdx package version promote --package "${{ env.package }}" --no-prompt
 
       - name: run package version report
         run: |
