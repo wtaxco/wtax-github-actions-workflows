@@ -7,7 +7,7 @@ on:
         required: false
       version-number:
         type: string
-        description: Version number of the package version to promote, specified as major.minor.patch.build, e.g. 1.0.1.2. Either this or `package` must be specified.
+        description: Version number of the package version to promote, specified as major.minor.patch, e.g. 1.0.1. The build number will be determined by finding the latest package with the given major, minor, and patch versions. Either this or `package` must be specified.
       source-directory:
         type: string
         description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
