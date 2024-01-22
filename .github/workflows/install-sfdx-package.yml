@@ -190,7 +190,7 @@ jobs:
         run: ansible-vault decrypt --vault-password-file=.vault-password .devhub-jwt-key
 
       - name: install Salesforce CLI (sfdx)
-        run: npm list -g sfdx-cli || npm install -g sfdx-cli
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: connect to DevHub org
         run: |

@@ -51,7 +51,7 @@ jobs:
           node-version: 18.x
 
       - name: install Salesforce CLI (sfdx)
-        run: npm list -g sfdx-cli || npm install -g sfdx-cli
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: package the source as metadata
         run: ./build.sh target/${{ github.event.repository.name }}-${{ github.sha }}.zip
@@ -79,7 +79,7 @@ jobs:
           node-version: 18.x
 
       - name: install Salesforce CLI (sfdx)
-        run: npm list -g sfdx-cli || npm install -g sfdx-cli
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: download metadata ZIP file
         uses: actions/download-artifact@v2
