@@ -32,3 +32,7 @@ jobs:
 
 This workflow has one job:
 - **package** - creates an SFDX package from the source code in `source-directory`
+
+## Notes
+
+This workflow [supports `packageInstallationKeys` in `sfdx-project.json`](packageInstallationKeys.md).

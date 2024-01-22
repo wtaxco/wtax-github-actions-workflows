@@ -30,4 +30,4 @@ This workflow has one jobs:
 
 ## Notes
 
-This workflow [supports `packageInstallationKey` in `sfdx-project.json`](packageInstallationKeys.md).
+This workflow [supports `packageInstallationKeys` in `sfdx-project.json`](packageInstallationKeys.md).
