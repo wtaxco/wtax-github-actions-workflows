@@ -214,7 +214,7 @@ jobs:
           done >>$GITHUB_OUTPUT
 
       - name: install dependencies using sfpowerscripts
-        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.inputs.installationkeys }}"
+        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
         if: ${{ inputs.texei-installation-keys-encrypted == ''}}
 
       - name: install dependencies (with installation keys)

@@ -233,7 +233,7 @@ jobs:
           done >>$GITHUB_OUTPUT
 
       - name: install dependencies
-        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.inputs.installationkeys }}"
+        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
 
       - name: install package
         run: sfdx package install --package "${{ steps.package-version.outputs.id }}" --installation-key "${installation_key_decrypted}" -w 15
