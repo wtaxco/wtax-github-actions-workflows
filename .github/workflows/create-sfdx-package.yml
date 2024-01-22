@@ -209,7 +209,7 @@ jobs:
             eval `echo $encrypted_key|awk -F: '{print "encryption_method="$1" encrypted_key="$2}'`
             case $encryption_method in
               ccrypt)
-                installation_key=`echo "$encrypted_key" | base64 -D | ccat -k .vault-password`
+                installation_key=`echo "$encrypted_key" | base64 --decode | ccat -k .vault-password`
                 ;;
               *)
                 if [ "x$encrypted_key" == "x" ]; then

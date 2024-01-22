@@ -92,7 +92,7 @@ has been written to a file `vault-password.txt`.
 To decrypt, reverse the process:
 
 ```shell
-echo 'encryptedkey' | base64 -D | ccat -k vault-password.txt
+echo 'encryptedkey' | base64 --decode | ccat -k vault-password.txt
 ```
 
 (Normally, decrypting is not necessary: the reusable workflows that support encrypted
