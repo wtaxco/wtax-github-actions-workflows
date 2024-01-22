@@ -129,6 +129,9 @@ jobs:
       - name: install jq
         run: sudo apt-get install -y jq
 
+      - name: install ccrypt
+        run: sudo apt-get install -y ccrypt
+
       - name: set up Node.js
         uses: actions/setup-node@v1
         with:
