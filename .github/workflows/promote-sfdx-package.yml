@@ -190,5 +190,5 @@ jobs:
         run: |
           echo "## Package version report for ${{ steps.package-info.outputs.name }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          sfdx package version report -p ${{ env.package }}" >> $GITHUB_STEP_SUMMARY
+          sfdx package version report -p "${{ env.package }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
