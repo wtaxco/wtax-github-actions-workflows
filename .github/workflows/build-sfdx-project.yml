@@ -112,7 +112,7 @@ on:
         default: admin@wtax.prod
       texei-installation-keys-encrypted:
         type: string
-        description: 'Parameter to be passed as the value of the `--installationkeys` option of the `texei:package:dependencies:install` command. It should contain the installation keys of password-protected packages in the order in which they appear in sfdx-project.json, e.g. "1:MyPackage1Key 2: 3:MyPackage3Key". See https://github.com/texei/texei-sfdx-plugin for more information. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)'
+        description: 'Parameter to be passed as the value of the `--installationkeys` option of the `texei:package:dependencies:install` command. It should contain the installation keys of password-protected packages in the order in which they appear in sfdx-project.json, e.g. "1:MyPackage1Key 2: 3:MyPackage3Key". See https://github.com/texei/texei-sfdx-plugin for more information. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!). DEPRECATED: add installation keys to sfdx-project.json instead.'
         required: false
     secrets:
       ansible-vault-password:
@@ -146,23 +146,32 @@ jobs:
       - name: install Salesforce CLI (sfdx)
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
+      - name: create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "@dxatscale/sfpowerscripts", "texei-sfdx-plugin" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: install sfpowerscripts plugin
+        run: sf plugins install @dxatscale/sfpowerscripts
+
+      - name: install texei plugin
+        run: sf plugins install texei-sfdx-plugin
+
       - name: connect to Dev Hub
         run: |
-          sfdx auth jwt grant \
+          sf auth jwt grant \
               --client-id="${{ inputs.client-id }}" \
               --jwt-key-file=.jwt-key \
               --instance-url="${{ inputs.instance-url }}" \
               --username="${{ inputs.username }}" \
-              --set-default-dev-hub
+              --set-default-dev-hub \
+              --alias dev-hub
 
       - name: create scratch org
-        run: sfdx org create scratch -w 5 -f config/project-scratch-def.json -d -y 1 --set-default
+        run: sf org create scratch -w 5 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
 
       - name: generate password
-        run:  sfdx force user password generate
-
-      - name: install texei plugin
-        run: echo y | sfdx plugins install texei-sfdx-plugin
+        run: sf force user password generate
 
       - name: write encrypted installation keys to file
         run: echo '${{ inputs.texei-installation-keys-encrypted }}' >texei-installation-keys.txt
@@ -176,22 +185,47 @@ jobs:
         run: echo "::add-mask::${texei_installation_keys_decrypted}"
         if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
-      - name: install dependencies (without installation keys)
-        run: sfdx texei:package:dependencies:install -w 15 -r
+      - name: create installation key string from packageInstallationKeys section in sfdx-project.json
+        id: installationkeys
+        run: |
+          echo -n "installationkeys=">$GITHUB_OUTPUT
+          cat sfdx-project.json | jq -r '.packageInstallationKeys|to_entries[]|[.key,.value]|@tsv'| \
+          while read line; do
+            eval `echo "$line"|awk '{print "package="$1" encrypted_key="$2}'`
+            eval `echo $encrypted_key|awk -F: '{print "encryption_method="$1" encrypted_key="$2}'`
+            case $encryption_method in
+              ccrypt)
+                installation_key=`echo "$encrypted_key" | base64 -D | ccat -k .vault-password`
+                ;;
+              *)
+                if [ "x$encrypted_key" == "x" ]; then
+                  # No encrypted key means there was no colon so key was plain text and encryption_method is actually the installation key
+                  installation_key="$encryption_method"
+                else
+                  echo "Unsupported encryption method '$encryption_method' for package $package"
+                  exit 3
+                fi
+                ;;
+            esac
+            echo -n "$package:$installation_key "
+          done >>$GITHUB_OUTPUT
+
+      - name: install dependencies using sfpowerscripts
+        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.inputs.installationkeys }}"
         if: ${{ inputs.texei-installation-keys-encrypted == ''}}
 
       - name: install dependencies (with installation keys)
-        run: sfdx texei:package:dependencies:install -w 15 -r --installationkeys="${texei_installation_keys_decrypted}"
+        run: sf texei package dependencies install -w 15 -r --installationkeys="${texei_installation_keys_decrypted}"
         if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
       - name: run scripts
         run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done || echo "No pre-test scripts to run."
 
       - name: push sources to scratch org
-        run: sfdx force:source:push -f
+        run: sf force source push -f
 
       - name: run unit tests
-        run: sfdx apex run test -l RunLocalTests --synchronous --code-coverage
+        run: sf apex run test -l RunLocalTests --synchronous --code-coverage
 
       - name: package the source as metadata
         run: ./build.sh target/${{ github.event.repository.name }}-${{ github.sha }}.zip

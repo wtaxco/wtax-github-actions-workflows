@@ -18,7 +18,7 @@ on:
         default: force-app
       installation-key-encrypted:
         type: string
-        description: Ansible Vault-encrypted installation key to protect the package version with (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        description: Ansible Vault-encrypted installation key required to install the package version (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
         required: false
         default: |
             $ANSIBLE_VAULT;1.1;AES256

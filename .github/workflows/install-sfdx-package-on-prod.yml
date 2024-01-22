@@ -18,12 +18,12 @@ on:
         default: force-app
       instance-url:
         type: string
-        description: Salesforce instance URL to log in to as Dev Hub org
+        description: Salesforce instance URL to log in to the target org
         required: false
         default: https://login.salesforce.com
       client-id:
         type: string
-        description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org
+        description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org
         required: false
         default: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
       jwt-key-encrypted:

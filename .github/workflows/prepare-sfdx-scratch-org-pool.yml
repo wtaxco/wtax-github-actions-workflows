@@ -82,5 +82,30 @@ jobs:
           --setdefaultdevhubusername \
           --json
 
+      - name: create installation key string from packageInstallationKeys section in sfdx-project.json
+        id: installationkeys
+        run: |
+            echo -n "installationkeys=">$GITHUB_OUTPUT
+            cat sfdx-project.json | jq -r '.packageInstallationKeys|to_entries[]|[.key,.value]|@tsv'| \
+            while read line; do
+              eval `echo "$line"|awk '{print "package="$1" encrypted_key="$2}'`
+              eval `echo $encrypted_key|awk -F: '{print "encryption_method="$1" encrypted_key="$2}'`
+              case $encryption_method in
+                ccrypt)
+                  installation_key=`echo "$encrypted_key" | base64 -D | ccat -k .vault-password`
+                  ;;
+                *)
+                  if [ "x$encrypted_key" == "x" ]; then
+                    # No encrypted key means there was no colon so key was plain text and encryption_method is actually the installation key
+                    installation_key="$encryption_method"
+                  else
+                    echo "Unsupported encryption method '$encryption_method' for package $package"
+                    exit 3
+                  fi
+                  ;;
+              esac
+              echo -n "$package:$installation_key "
+            done >>$GITHUB_OUTPUT
+
       - name: prepare scratch org pool
-        run: sf orchestrator prepare -v OrgPool --loglevel debug
+        run: sf orchestrator prepare -v OrgPool --loglevel debug --keys "${{ steps.installationkeys.outputs.installationkeys }}"
