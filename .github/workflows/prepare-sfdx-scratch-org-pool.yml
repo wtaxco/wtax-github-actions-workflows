@@ -60,9 +60,7 @@ jobs:
       - name: create unsigned plugin allowlist
         run: |
           mkdir -p $HOME/.config/sf
-          echo '[
-                 "@dxatscale/sfpowerscripts"
-                ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+          echo '[ "@dxatscale/sfpowerscripts" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
 
       - name: install sfpowerscripts plugin
         run: sf plugins install @dxatscale/sfpowerscripts

@@ -166,6 +166,14 @@ jobs:
       - name: install Salesforce CLI (sfdx)
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
+      - name: create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "@dxatscale/sfpowerscripts" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: install sfpowerscripts plugin
+        run: sf plugins install @dxatscale/sfpowerscripts
+
       - name: connect to Dev Hub
         run: |
           sfdx auth jwt grant \
