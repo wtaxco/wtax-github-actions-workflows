@@ -50,7 +50,7 @@ jobs:
         run: sudo apt-get install -y ccrypt
 
       - name: set up Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
 
@@ -94,6 +94,9 @@ jobs:
               case $encryption_method in
                 ccrypt)
                   installation_key=`echo "$encrypted_key" | base64 --decode | ccat -k .vault-password`
+                  ;;
+                plain)
+                  installation_key="$encrypted_key"
                   ;;
                 *)
                   if [ "x$encrypted_key" == "x" ]; then

@@ -1,7 +1,7 @@
-# `packageInstallationKeys`
+# Package installation keys
 
 To keep all package-related information together in the same place while making it as easy as
-possible to work with installation-key-proetected packages, we've extended `sfdx-project.json`,
+possible to work with installation-key-protected packages, we've extended `sfdx-project.json`,
 the project descriptor for SFDX projects, with a new attribute `packageInstallationKeys`.
 
 ## Purpose
@@ -47,12 +47,13 @@ For example:
   "packageAliases": {
     "apex-lang managed-1.18.0.1": "04t80000000jN1qAAE",
     "my-protected-package": "04t............",
-    "other-protected-package": "04t............"
+    "other-protected-package": "04t............",
+    "not-really-protected-package": "04t................"
   },
   "packageInstallationKeys": {
     "my-protected-package": "ccrypt:M2tMZOgqYeUsV0LbRv9y0I3vwdXPtkv8yVmqSAlY/Rw4k/ijqJrq",
     "other-protected-package": "ccrypt:uaGU5SlXe903unaBn0AxLQ4Ia+9eh8ZOfR0Ag7uCIbuzCGbPpFm4",
-    "not-really-protected-package": "plain:secret"
+    "not-really-protected-package": "secret"
   }
 }
 ```
@@ -65,7 +66,7 @@ encrypted installation key, and `method` indicates how it was encrypted.
 
 | Name     | Description                                                                                                                                                          |
 |----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `plain`  | The installation key is not actually encrypted, but represented in cleartext. Not recommended.                                                                       |
+| `plain`  | The installation key is not actually encrypted, but represented in cleartext. The method and colon separator may be omitted in this case. Not recommended.           |
 | `ccrypt` | The installation key was encrypted using the Unix `ccrypt` tool, using the project's `ansible-vault-password` secret as the encryption key, and then base64 encoded. |
 
 More methods may be added in the future if the need arises.
@@ -97,3 +98,44 @@ echo 'encryptedkey' | base64 --decode | ccat -k vault-password.txt
 
 (Normally, decrypting is not necessary: the reusable workflows that support encrypted
 package installation keys will decrypt them as needed.)
+
+## Implementation
+
+The workflows that use encrypted installation keys will pass the decrypted installation keys 
+on to the sfpowerscripts plugin to install the required packages.
+
+Because of the format in which sfpowerscripts expects installation keys (a space-separated
+list of `alias:key` pairs), the package alias must not contain spaces.
+
+Since the package aliases only apply within the scope of `sfdx-project.json` and you can
+choose any alias you like for a package, this shouldn't be a problem in practice.
+
+For example:
+
+**OK:**
+
+```json
+  "packageAliases": {
+    "apex-lang managed-1.18.0.1": "04t80000000jN1qAAE",
+    "my-protected-package": "04t............",
+    "other-protected-package": "04t............"
+  },
+  "packageInstallationKeys": {
+    "my-protected-package": "ccrypt:M2tMZOgqYeUsV0LbRv9y0I3vwdXPtkv8yVmqSAlY/Rw4k/ijqJrq",
+    "other-protected-package": "ccrypt:uaGU5SlXe903unaBn0AxLQ4Ia+9eh8ZOfR0Ag7uCIbuzCGbPpFm4"
+  }
+```
+
+**Not OK:**
+
+```json
+  "packageAliases": {
+    "apex-lang managed-1.18.0.1": "04t80000000jN1qAAE",
+    "my protected package": "04t............",
+    "other protected package": "04t............"
+  },
+  "packageInstallationKeys": {
+    "my protected package": "ccrypt:M2tMZOgqYeUsV0LbRv9y0I3vwdXPtkv8yVmqSAlY/Rw4k/ijqJrq",
+    "other protected package": "ccrypt:uaGU5SlXe903unaBn0AxLQ4Ia+9eh8ZOfR0Ag7uCIbuzCGbPpFm4"
+  }
+```
