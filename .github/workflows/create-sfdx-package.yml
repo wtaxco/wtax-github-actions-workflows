@@ -201,7 +201,14 @@ jobs:
         id: package-version
         run: |
           set -o pipefail
-          sfdx package version create --package "${{ steps.package-info.outputs.name }}" --tag "Git commit ${{ github.sha }}" --code-coverage --installation-key "${installation_key_decrypted}" -w 60 --json | tee output.json
+          sfdx package version create \
+              --package "${{ steps.package-info.outputs.name }}" \
+              --tag "Git commit ${{ github.sha }}" \
+              --code-coverage \
+              --definition-file config/project-scratch-def.json \
+              --installation-key "${installation_key_decrypted}" \
+              --wait 60 \
+              --json | tee output.json
           cat output.json | jq -r '"id=" + .result.SubscriberPackageVersionId' >>$GITHUB_OUTPUT
 
       - name: create scratch org
