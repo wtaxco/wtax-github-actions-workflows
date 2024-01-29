@@ -153,7 +153,7 @@ jobs:
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
 
-      - name: install Salesforce CLI (sfdx)
+      - name: install Salesforce CLI
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: connect to Dev Hub

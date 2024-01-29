@@ -189,21 +189,22 @@ jobs:
       - name: decrypt the private key for the DevHub Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .devhub-jwt-key
 
-      - name: install Salesforce CLI (sfdx)
+      - name: install Salesforce CLI
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: connect to DevHub org
         run: |
-          sfdx auth jwt grant \
+          sf auth jwt grant \
               --client-id="${{ inputs.devhub-client-id }}" \
               --jwt-key-file=.devhub-jwt-key \
               --instance-url=${{ inputs.devhub-instance-url }} \
               --username=${{ inputs.devhub-username }} \
-              --set-default-dev-hub
+              --set-default-dev-hub \
+              --alias dev-hub
 
       - name: connect to org
         run: |
-          sfdx auth jwt grant \
+          sf auth jwt grant \
               --client-id="${{ inputs.client-id }}" \
               --jwt-key-file=.jwt-key \
               --instance-url=${{ inputs.instance-url }} \
@@ -239,4 +240,4 @@ jobs:
         if: env.package == ''
 
       - name: install package
-        run: sfdx package install --package "${package}" --installation-key "${installation_key_decrypted}" -w 15
+        run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" -w 15

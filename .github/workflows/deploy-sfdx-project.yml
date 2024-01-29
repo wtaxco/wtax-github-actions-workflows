@@ -78,7 +78,7 @@ jobs:
         with:
           node-version: 18.x
 
-      - name: install Salesforce CLI (sfdx)
+      - name: install Salesforce CLI
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: download metadata ZIP file
@@ -98,7 +98,7 @@ jobs:
 
       - name: connect to org
         run: |
-          sfdx auth jwt grant \
+          sf auth jwt grant \
               --client-id="${{ inputs.client-id }}" \
               --jwt-key-file=.jwt-key \
               --instance-url=${{ inputs.instance-url }} \

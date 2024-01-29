@@ -163,7 +163,7 @@ jobs:
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
 
-      - name: install Salesforce CLI (sfdx)
+      - name: install Salesforce CLI
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
       - name: create unsigned plugin allowlist
@@ -176,7 +176,7 @@ jobs:
 
       - name: connect to Dev Hub
         run: |
-          sfdx auth jwt grant \
+          sf auth jwt grant \
               --client-id="${{ inputs.client-id }}" \
               --jwt-key-file=.jwt-key \
               --instance-url="${{ inputs.instance-url }}" \
