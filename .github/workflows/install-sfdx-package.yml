@@ -236,7 +236,7 @@ jobs:
       - name: find package by version number
         run: |
           versionNumberJQEscaped=$(echo -n '${{ inputs.version-number }}' | sed -e 's/\./\\\\./g')
-          echo package=$(cat package-versions.json | jq -r '.result|map(select(.Version|test("^'${versionNumberJQEscaped}'\\."))[].SubscriberPackageVersionId') >>$GITHUB_ENV
+          echo package=$(cat package-versions.json | jq -r '.result|map(select(.Version|test("^'${versionNumberJQEscaped}'\\.")))[].SubscriberPackageVersionId') >>$GITHUB_ENV
         if: env.package == ''
 
       - name: install package
