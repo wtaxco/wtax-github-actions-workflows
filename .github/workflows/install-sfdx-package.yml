@@ -226,7 +226,7 @@ jobs:
         if: inputs.package == ''
 
       - name: list package versions
-        run: set -o pipefail; sfdx package version list --packages "${{ steps.package-info.outputs.name }}" --json | tee package-versions.json
+        run: set -o pipefail; sf package version list --packages "${{ steps.package-info.outputs.name }}" --target-dev-hub dev-hub --released --json | tee package-versions.json
         if: inputs.package == ''
 
       - name: find package by id
@@ -236,8 +236,8 @@ jobs:
       - name: find package by version number
         run: |
           versionNumberJQEscaped=$(echo -n '${{ inputs.version-number }}' | sed -e 's/\./\\\\./g')
-          echo package=$(cat package-versions.json | jq -r '.result|map(select((.Version|test("^'${versionNumberJQEscaped}'\\.")) and .IsReleased))[].SubscriberPackageVersionId') >>$GITHUB_ENV
+          echo package=$(cat package-versions.json | jq -r '.result|map(select(.Version|test("^'${versionNumberJQEscaped}'\\."))[].SubscriberPackageVersionId') >>$GITHUB_ENV
         if: env.package == ''
 
       - name: install package
-        run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" -w 15
+        run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" --apex-compile package --upgrade-type Mixed --wait 15
