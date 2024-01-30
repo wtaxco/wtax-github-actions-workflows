@@ -226,7 +226,7 @@ jobs:
         if: inputs.package == ''
 
       - name: list package versions
-        run: set -o pipefail; sf package version list --packages "${{ steps.package-info.outputs.name }}" --target-dev-hub dev-hub --released --json | tee package-versions.json
+        run: set -o pipefail; sf package version list --packages "${{ steps.package-info.outputs.name }}" --target-dev-hub ${{ inputs.devhub-username }} --released --json | tee package-versions.json
         if: inputs.package == ''
 
       - name: find package by id
