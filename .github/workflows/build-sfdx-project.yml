@@ -227,9 +227,9 @@ jobs:
       - name: push sources to scratch org
         run: |
           set -o pipefail
-          jq -r .packageDirectories[].path < sfdx-project.json | \
+          jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-            sf project source deploy --source-dir $path
+            sf project deploy start --source-dir $path
           done
 
       - name: run unit tests
