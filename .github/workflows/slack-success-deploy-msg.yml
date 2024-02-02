@@ -1,14 +1,42 @@
 on:
   workflow_call:
+    inputs:
+      slack-webhook-url-encrypted:
+        type: string
+        description: Ansible Vault-encrypted url to connect to the WTax Slack channel (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: true
+        default: |
+          $ANSIBLE_VAULT;1.1;AES256
+          36343362653465353336633433623861306133616439623536323937393430646431373439376334
+          3930623466393166353565313135353431633130303437630a643239636631383338306238306638
+          63643665373364393161633133303432613130653662653366616533383864346539356338376161
+          3062393766623338630a616566656561316432353865393439396265386464363236646539313763
+          35326662633939356238653937633235626164613638396265633634333932366666623332323131
+          33326332323535663830366336333433323765313736353138393130666339623838393437396566
+          34313230313535333332656337643937626162653931383135633239653939303635643936326331
+          30343066313865306161
     secrets:
-      slack_webhook_url:
-        description: Slack Webhook URL stored in the project secrets.
+      ansible-vault-password:
+        description: Password to be used to decrypt the `slack-webhook-url-encrypted`.
         required: true
 
 jobs:
   send-success-notification:
     runs-on: ubuntu-latest
-    steps: 
+    steps:
+
+      - name: write encrypted Slack webhook url to file
+        run: echo '${{ inputs.slack-webhook-url-encrypted }}' >.slack-webhook-url
+
+      - name: write Ansible Vault password to file
+        run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
+
+      - name: decrypt the private key for the Continuous Integration connected app
+        run: ansible-vault decrypt --vault-password-file=.vault-password .slack-webhook-url
+
+      - name: output slack url
+        id: slack-url
+        run: echo url="`cat .slack-webhook-url`" >>$GITHUB_OUTPUT
 
       - name: Send success-deployment message to Slack
         id: slack_success_deploy_msg
@@ -31,6 +59,6 @@ jobs:
                 ]
               }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
+          SLACK_WEBHOOK_URL: ${{ steps.slack-url.outputs.url }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           
