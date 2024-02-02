@@ -6,7 +6,7 @@ on:
         required: true
 
 jobs:
-  build:
+  send-failure-notification:
     runs-on: ubuntu-latest
     steps: 
 
@@ -30,7 +30,7 @@ jobs:
                       }
                 ]
               }
-          env:
-            SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
-            SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_url }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
             
