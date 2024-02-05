@@ -4,7 +4,7 @@ on:
       slack-webhook-url-encrypted:
         type: string
         description: Ansible Vault-encrypted url to connect to the WTax Slack channel (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
-        required: true
+        required: false
         default: |
           $ANSIBLE_VAULT;1.1;AES256
           36343362653465353336633433623861306133616439623536323937393430646431373439376334
