@@ -229,7 +229,10 @@ jobs:
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-            sf project deploy start --source-dir $path --ignore-conflicts
+          if ! sf project deploy start --source-dir $path --ignore-conflicts; then
+            sf project deploy preview
+            exit 1
+          fi
           done
 
       - name: run unit tests
