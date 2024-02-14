@@ -171,7 +171,7 @@ jobs:
               --alias dev-hub
 
       - name: create scratch org
-        run: sf org create scratch -w 5 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
+        run: sf org create scratch -w 15 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
 
       - name: write encrypted installation keys to file
         run: echo '${{ inputs.texei-installation-keys-encrypted }}' >texei-installation-keys.txt
@@ -229,10 +229,7 @@ jobs:
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-          if ! sf project deploy start --source-dir $path --ignore-conflicts; then
-            sf project deploy preview
-            exit 1
-          fi
+            sf project deploy start --source-dir $path --ignore-conflicts
           done
 
       - name: run unit tests
