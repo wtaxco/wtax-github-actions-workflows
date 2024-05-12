@@ -1,6 +1,11 @@
 on:
   workflow_call:
     inputs:
+      source-directory:
+        type: string
+        description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
+        required: false
+        default: force-app
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -224,19 +229,22 @@ jobs:
       - name: run scripts
         run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done || echo "No pre-test scripts to run."
 
-      - name: push sources to scratch org
+      - name: push sources to scratch org and run tests for source-directory
         run: |
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-            sf project deploy start --source-dir $path --ignore-conflicts
+            if [ "$path" == "${{ inputs.source-directory }}" ]; then
+              sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunLocalTests --coverage-formatters=json --results-dir reports
+            else
+              sf project deploy start --source-dir $path --ignore-conflicts
+            fi
           done
 
-      - name: run unit tests
-        run: sf apex run test -l RunLocalTests --synchronous --code-coverage
-
       - name: package the source as metadata
-        run: ./build.sh target/${{ github.event.repository.name }}-${{ github.sha }}.zip
+        run: |
+          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
+          sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
