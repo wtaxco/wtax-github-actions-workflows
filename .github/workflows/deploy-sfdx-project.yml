@@ -10,6 +10,18 @@ on:
         type: string
         description: URL of the Sonar server to use for analyzing the code. If omitted, no Sonar analysis will be run.
         required: false
+      sonar-login-encrypted:
+        type: string
+        description: Ansible Vault-encrypted access token or username:password combination for the Sonar server specified in the `sonar-url` input. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: false
+        default: |
+          $ANSIBLE_VAULT;1.1;AES256
+          35373231663562616534663832633766396430663063373663613231326435343631313737353738
+          3563393534376530636236323337663339663136313130320a383536353139346132636638306162
+          63663361333862396166333338636436306332656165643861633737303130306561656131613837
+          3264663737393461610a653532633366626361383235616666343135393466643161616463376338
+          62643432326530666566386435366164343362336666326436653038616233343561353235343830
+          3032633238343139323938363761613439323931626636643838
       instance-url:
         type: string
         description: Salesforce instance URL of the target org
@@ -20,7 +32,7 @@ on:
         required: true
       jwt-key-encrypted:
         type: string
-        description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
         required: true
       username:
         type: string
@@ -33,9 +45,6 @@ on:
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
-        required: true
-      sonar-login:
-        description: Access token or username:password combination for the Sonar server specified in the `sonar-url` input.
         required: true
 jobs:
   debug:
@@ -138,11 +147,11 @@ jobs:
           name: artifact
           path: target
 
-      - name: write encrypted JWT key to file
-        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
-
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
+
+      - name: write encrypted JWT key to file
+        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
 
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
@@ -226,6 +235,17 @@ jobs:
       - name: convert test coverage report to Sonarqube format
         run: sf apex-code-coverage transformer transform -j reports/coverage/coverage.json -x reports/coverage/coverage.xml
 
+      - name: write encrypted sonar token to file
+        run: echo '${{ inputs.sonar-login-encrypted }}' >.sonar-login
+
+      - name: decrypt the sonar token
+        run: |
+          echo -n "sonar_login_decrypted=">$GITHUB_ENV
+          ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login >>$GITHUB_ENV
+
+      - name: tell GitHub Actions to mask the sonar token in the log
+        run: echo "::add-mask::${sonar_login_decrypted}"
+
       - name: send test coverage results to Sonar
-        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${{ secrets.sonar-login }}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml
+        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${sonar_login_decrypted}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml
         if: inputs.sonar-url != ''
