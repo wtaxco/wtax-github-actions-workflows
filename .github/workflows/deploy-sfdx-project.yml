@@ -22,6 +22,11 @@ on:
           3264663737393461610a653532633366626361383235616666343135393466643161616463376338
           62643432326530666566386435366164343362336666326436653038616233343561353235343830
           3032633238343139323938363761613439323931626636643838
+      sonar-quality-gate:
+        type: boolean
+        description: Whether to poll the SonarQube instance until the quality gate status is available and fail the build if the quality gate fails.
+        required: false
+        default: true
       instance-url:
         type: string
         description: Salesforce instance URL of the target org
@@ -246,6 +251,10 @@ jobs:
       - name: tell GitHub Actions to mask the sonar token in the log
         run: echo "::add-mask::${sonar_login_decrypted}"
 
-      - name: send test coverage results to Sonar
-        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${sonar_login_decrypted}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml
-        if: inputs.sonar-url != ''
+      - name: send test coverage results to Sonar with quality gate check
+        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${sonar_login_decrypted}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml -Dsonar.qualitygate.wait=true
+        if: inputs.sonar-url != '' && inputs.sonar-quality-gate
+
+      - name: send test coverage results to Sonar without quality gate check
+        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${sonar_login_decrypted}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml -Dsonar.qualitygate.wait=false
+        if: inputs.sonar-url != '' && !inputs.sonar-quality-gate
