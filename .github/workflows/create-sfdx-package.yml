@@ -27,7 +27,7 @@ on:
         type: boolean
         description: Whether to poll the SonarQube instance until the quality gate status is available and fail the build if the quality gate fails.
         required: false
-        default: true
+        default: false
       installation-key-encrypted:
         type: string
         description: Ansible Vault-encrypted installation key to protect the package version with (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
