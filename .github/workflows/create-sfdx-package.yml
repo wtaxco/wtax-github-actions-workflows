@@ -56,7 +56,7 @@ on:
         default: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
       jwt-key-encrypted:
         type: string
-        description: Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        description: Ansible Vault-encrypted private key to connect to the Dev Hub org with using the JWT flow. This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!
         required: false
         default: |
             $ANSIBLE_VAULT;1.1;AES256
@@ -153,6 +153,22 @@ on:
         description: Username of Salesforce user to authenticate as on the Dev Hub org; must have permission to create scratch orgs
         required: false
         default: admin@wtax.prod
+      docker-username:
+        type: string
+        description: Username to use to connect to the docker registry docker.wtax.co that contains the wtax/pmd image used for static code analysis
+        required: false
+        default: github
+      docker-password-encrypted:
+        type: string
+        description: Ansible Vault-encrypted password matching the `docker-username` used to log in to the Docker registry docker.wtax.co. This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!
+        required: false
+        default: |
+            $ANSIBLE_VAULT;1.1;AES256
+            63353733303166336136366435326436353731376636366631396239656432326433393265663965
+            3736366139386466646534633963346133396333376333380a343032326335623566626263623062
+            66646433313964633930383465626633666636633937303839306266346562316230643965373633
+            6365326631316564640a626466666634333235656163333334373538663534323862303733353664
+            63626230363462643364393731616137393231653866363230636238393266363430
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
@@ -176,11 +192,11 @@ jobs:
         with:
           node-version: 18.x
 
-      - name: write encrypted JWT key to file
-        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
-
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
+
+      - name: write encrypted JWT key to file
+        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
 
       - name: decrypt the private key for the Continuous Integration connected app
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
@@ -282,6 +298,31 @@ jobs:
         run: sf apex-code-coverage transformer transform -j reports/coverage/test-result-codecoverage.json -x reports/coverage/coverage.xml --command=test
         if: inputs.sonar-url != ''
 
+      - name: write encrypted Docker registry password to file
+        run: echo '${{ inputs.docker-password-encrypted }}' >.docker-password
+
+      - name: decrypt the Docker registry password
+        run: |
+          ansible-vault decrypt --vault-password-file=.vault-password .docker-password >>$GITHUB_ENV
+
+      - name: log in to the docker.wtax.co Docker registry
+        run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co <.docker-password
+
+      - name: retrieve Apex ruleset
+        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/WSS-46-Apex-PMD-Sonar/assets/pmd/apex-ruleset.xml
+
+      - name: run PMD static code analysis for Apex code
+        run: >
+            docker run 
+            --rm
+            -v .:/usr/src 
+            docker.wtax.co/wtax/pmd:7.1.0 
+            check 
+            --rulesets=/usr/src/apex-ruleset.xml 
+            --dir=/usr/src 
+            --report-file=/usr/src/reports/pmd.xml 
+            --format=xml
+
       - name: write encrypted sonar token to file
         run: echo '${{ inputs.sonar-login-encrypted }}' >.sonar-login
 
@@ -293,13 +334,21 @@ jobs:
       - name: tell GitHub Actions to mask the sonar token in the log
         run: echo "::add-mask::${sonar_login_decrypted}"
 
-      - name: send test coverage results to Sonar with quality gate check
-        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${sonar_login_decrypted}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml -Dsonar.qualitygate.wait=true
-        if: inputs.sonar-url != '' && inputs.sonar-quality-gate
-
-      - name: send test coverage results to Sonar without quality gate check
-        run: docker run --rm -e SONAR_HOST_URL="${{ inputs.sonar-url }}" -e SONAR_LOGIN="${sonar_login_decrypted}" -v ".:/usr/src" sonarsource/sonar-scanner-cli -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} -Dsonar.javascript.file.suffixes=.cls -Dsonar.sources=${{ inputs.source-directory }}/main -Dsonar.tests=${{ inputs.source-directory }}/test -Dsonar.coverageReportPaths=reports/coverage/coverage.xml -Dsonar.qualitygate.wait=false
-        if: inputs.sonar-url != '' && !inputs.sonar-quality-gate
+      - name: send test coverage results to Sonar
+        run: >
+            docker run --rm 
+            -e SONAR_HOST_URL="${{ inputs.sonar-url }}" 
+            -e SONAR_LOGIN="${sonar_login_decrypted}" 
+            -v ".:/usr/src" 
+            sonarsource/sonar-scanner-cli 
+            -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} 
+            -Dsonar.javascript.file.suffixes=.cls 
+            -Dsonar.sources=${{ inputs.source-directory }}/main 
+            -Dsonar.tests=${{ inputs.source-directory }}/test 
+            -Dsonar.coverageReportPaths=reports/coverage/coverage.xml 
+            -Dsonar.java.pmd.reportPaths=reports/pmd.xml
+            -Dsonar.qualitygate.wait=${{ inputs.sonar-quality-gate == true }}
+        if: inputs.sonar-url != ''
 
       - name: promote package
         run: sfdx package version promote --package "${{ steps.package-version.outputs.id }}" --no-prompt
