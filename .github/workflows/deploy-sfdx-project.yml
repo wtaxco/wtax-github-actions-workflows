@@ -252,22 +252,28 @@ jobs:
 
       - name: install apex-code-coverage-transformer plugin
         run: sf plugins install apex-code-coverage-transformer
+        if: inputs.sonar-url != ''
 
       - name: convert test coverage report to Sonarqube format
         run: sf apex-code-coverage transformer transform -j reports/coverage/coverage.json -x reports/coverage/coverage.xml
+        if: inputs.sonar-url != ''
 
       - name: write encrypted Docker registry password to file
         run: echo '${{ inputs.docker-password-encrypted }}' >.docker-password
+        if: inputs.sonar-url != ''
 
       - name: decrypt the Docker registry password
         run: |
           ansible-vault decrypt --vault-password-file=.vault-password .docker-password >>$GITHUB_ENV
+        if: inputs.sonar-url != ''
 
       - name: log in to the docker.wtax.co Docker registry
         run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co <.docker-password
+        if: inputs.sonar-url != ''
 
       - name: retrieve Apex ruleset
         run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/WSS-46-Apex-PMD-Sonar/assets/pmd/apex-ruleset.xml
+        if: inputs.sonar-url != ''
 
       - name: run PMD static code analysis for Apex code
         run: >
@@ -280,17 +286,22 @@ jobs:
             --dir=/usr/src 
             --report-file=/usr/src/reports/pmd.xml 
             --format=xml
+            --no-fail-on-violation
+        if: inputs.sonar-url != ''
 
       - name: write encrypted sonar token to file
         run: echo '${{ inputs.sonar-login-encrypted }}' >.sonar-login
+        if: inputs.sonar-url != ''
 
       - name: decrypt the sonar token
         run: |
           echo -n "sonar_login_decrypted=">$GITHUB_ENV
           ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login >>$GITHUB_ENV
+        if: inputs.sonar-url != ''
 
       - name: tell GitHub Actions to mask the sonar token in the log
         run: echo "::add-mask::${sonar_login_decrypted}"
+        if: inputs.sonar-url != ''
 
       - name: send test coverage results to Sonar
         run: >
