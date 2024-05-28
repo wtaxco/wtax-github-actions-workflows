@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -133,7 +133,7 @@ jobs:
           popd >/dev/null
 
       - name: archive artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: artifact
           path: target/${{ github.event.repository.name }}-${{ github.sha }}.zip
@@ -144,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: install jq
         run: sudo apt-get install -y jq

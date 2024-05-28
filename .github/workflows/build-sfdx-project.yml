@@ -129,7 +129,7 @@ jobs:
 
     steps:
       - name: check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -247,7 +247,7 @@ jobs:
           sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: artifact
           path: target/${{ github.event.repository.name }}-${{ github.sha }}.zip
