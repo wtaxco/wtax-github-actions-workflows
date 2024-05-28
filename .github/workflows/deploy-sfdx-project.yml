@@ -66,6 +66,7 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: check out code
         uses: actions/checkout@v2
