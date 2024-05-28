@@ -214,11 +214,11 @@ jobs:
       - name: write encrypted installation key to file
         run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
 
+      - name: tell GitHub Actions to mask the installation key in the log
+        run: echo "::add-mask::$(ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt)"
+
       - name: decrypt the installation key
         run: echo "installation_key_decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - installation-key.txt) >>$GITHUB_ENV
-
-      - name: tell GitHub Actions to mask the installation key in the log
-        run: echo "::add-mask::${installation_key_decrypted}"
 
       - name: find package name
         id: package-info

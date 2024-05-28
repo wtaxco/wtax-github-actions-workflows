@@ -182,12 +182,12 @@ jobs:
         run: echo '${{ inputs.texei-installation-keys-encrypted }}' >texei-installation-keys.txt
         if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
-      - name: decrypt the installation keys
-        run: echo "texei_installation_keys_decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - texei-installation-keys.txt) >>$GITHUB_ENV
+      - name: tell GitHub Actions to mask the installation keys in the log
+        run: echo "::add-mask::$(ansible-vault decrypt --vault-password-file=.vault-password --output - texei-installation-keys.txt)"
         if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
-      - name: tell GitHub Actions to mask the installation keys in the log
-        run: echo "::add-mask::${texei_installation_keys_decrypted}"
+      - name: decrypt the installation keys
+        run: echo "texei_installation_keys_decrypted="$(ansible-vault decrypt --vault-password-file=.vault-password --output - texei-installation-keys.txt) >>$GITHUB_ENV
         if: ${{ inputs.texei-installation-keys-encrypted != '' }}
 
       - name: create installation key string from packageInstallationKeys section in sfdx-project.json

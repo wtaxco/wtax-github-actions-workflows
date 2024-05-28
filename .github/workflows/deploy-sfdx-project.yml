@@ -293,14 +293,14 @@ jobs:
         run: echo '${{ inputs.sonar-login-encrypted }}' >.sonar-login
         if: inputs.sonar-url != ''
 
+      - name: tell GitHub Actions to mask the sonar token in the log
+        run: echo "::add-mask::$(ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login)"
+        if: inputs.sonar-url != ''
+
       - name: decrypt the sonar token
         run: |
           echo -n "sonar_login_decrypted=">$GITHUB_ENV
           ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login >>$GITHUB_ENV
-        if: inputs.sonar-url != ''
-
-      - name: tell GitHub Actions to mask the sonar token in the log
-        run: echo "::add-mask::${sonar_login_decrypted}"
         if: inputs.sonar-url != ''
 
       - name: send test coverage results to Sonar
