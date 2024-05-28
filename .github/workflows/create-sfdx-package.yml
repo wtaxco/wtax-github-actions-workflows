@@ -349,7 +349,7 @@ jobs:
             -e SONAR_HOST_URL="${{ inputs.sonar-url }}" 
             -e SONAR_LOGIN="${sonar_login_decrypted}" 
             -v ".:/usr/src" 
-            sonarsource/sonar-scanner-cli 
+            sonarsource/sonar-scanner-cli:5 
             -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} 
             -Dsonar.javascript.file.suffixes=.cls 
             -Dsonar.sources=${{ inputs.source-directory }}/main 
