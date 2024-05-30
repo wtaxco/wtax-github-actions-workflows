@@ -312,7 +312,7 @@ jobs:
         if: inputs.sonar-url != ''
 
       - name: retrieve Apex ruleset
-        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/WSS-46-Apex-PMD-Sonar/assets/pmd/apex-ruleset.xml
+        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/testing/assets/pmd/apex-ruleset.xml
         if: inputs.sonar-url != ''
 
       - name: run PMD static code analysis for Apex code

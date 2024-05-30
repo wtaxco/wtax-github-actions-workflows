@@ -105,32 +105,28 @@ jobs:
           # Determine which Apex classes are marked for deletion (have a "//DELETE" line)
           echo "Removing Apex classes and triggers marked as deleted from metadata directory..."
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          members="$(grep -r '^\/\/ *DELETE$' "${metadata_directory}"|awk -F':' '{print $1}'|while read line; do
+          files_to_delete="$(grep -r '^\/\/ *DELETE$' "${metadata_directory}"|awk -F':' '{print $1}'|while read line; do
+            echo $line
             filename=`basename $line`
             ext=${filename##*.}
-            sep=
             if [ "${ext}" == "cls" ]; then
               apexClass=`basename $filename .cls`
-              echo "    <members>${apexClass}</members>"
               rm -f $line $line-meta.xml
               sed -i.bak "/<members>${apexClass}<\\/members>/d" ${metadata_directory}/package.xml
             elif [ "${ext}" == "trigger" ]; then
               apexTrigger=`basename $filename .trigger`
-              echo "    <members>${apexClass}</members>"
               rm -f $line $line-meta.xml
-              sed -i.bak "/<members>${apexClass}<\\/members>/d" ${metadata_directory}/package.xml
+              sed -i.bak "/<members>${apexTrigger}<\\/members>/d" ${metadata_directory}/package.xml
             fi
-          done)"
+          done|wc -l)"
           rm -f ${metadata_directory}/package.xml.bak
-          files_to_delete=`echo "${members}"|grep -c '<members>' || echo`
           echo "${files_to_delete} Apex classes(s) and trigger(s) removed from metadata directory."
 
       - name: zip metadata directory
         run: |
-          pushd "target" >/dev/null
           rm -f "${{ github.event.repository.name }}-${{ github.sha }}.zip" 
           zip -r "${{ github.event.repository.name }}-${{ github.sha }}.zip" "${{ github.event.repository.name }}-${{ github.sha }}" >/dev/null
-          popd >/dev/null
+        working-directory: target
 
       - name: archive artifacts
         uses: actions/upload-artifact@v4
@@ -188,54 +184,52 @@ jobs:
 
       - name: create destructive change manifest for Apex classes/triggers marked with //DELETE
         run: |
+          # Set some variables
+          target_org="${{ inputs.username }}"
+          source_directory="${{ inputs.source-directory }}"
+          zipfile_absolute="$(cd "$(dirname "target/${{ github.event.repository.name }}-${{ github.sha }}.zip")"; pwd -P)/$(basename "target/${{ github.event.repository.name }}-${{ github.sha }}.zip")"
+
           # Determine which Apex classes are marked for deletion (have a "//DELETE" line)
-          components="$(sep=; grep -r '^\/\/ *DELETE$' force-app|awk -F':' '{print $1}'|while read line; do
+          components="$(grep -r '^\/\/ *DELETE$' ${source_directory}|awk -F':' '{print $1}'|while read line; do
             filename=`basename $line`
             ext=${filename##*.}
             if [ "${ext}" == "cls" ]; then
-            echo -n "${sep}ApexClass:`basename $filename .cls`"
-            sep=,
+              echo -n " --metadata ApexClass:`basename $filename .cls`"
+            elif [ "${ext}" == "trigger" ]; then
+              echo -n " --metadata ApexTrigger:`basename $filename .trigger`"
             fi
           done)"
-          if [ "x${components}" != "x" ]; then
-            # Create a destructiveChangesPre.xml and add it to the metadata zipfile
-            zipfile_absolute="$(cd "$(dirname "target/${{ github.event.repository.name }}-${{ github.sha }}.zip")"; pwd -P)/$(basename "target/${{ github.event.repository.name }}-${{ github.sha }}.zip")"
-            echo "- Adding destructive changes to metadata package..."
+          num_components_marked_for_deletion=$(echo ${components}|grep -o -e '--metadata'|wc -l)
+          echo "${num_components_marked_for_deletion} component(s) marked for deletion."
             
+          if [ ${num_components_marked_for_deletion} -gt 0 ]; then
             # Retrieve the Apex classes from the org to see which ones actually exist there, as attempting a delete
             # on an Apex class that doesn't exist fails the deployment
             rm -rf delete && mkdir -p delete
-            pushd delete >/dev/null
-            cat <<EOF >sfdx-project.json
-            {
-              "packageDirectories": [
-                {
-                  "path": "force-app"
-                }
-              ]
-            }
-          EOF
-            mkdir force-app
-            # force:source:retrieve requires an explicit -u orgname
-            sfdx force:source:retrieve -u "${{ inputs.username }}" -m "${components}" --json
+            mkdir delete/source
+            # retrieve metadata requires an explicit -o orgname
+            echo "- Finding components to delete that still exist on target org..."
+            sf retrieve metadata -o "${target_org}" ${components} --output-dir=delete/source --ignore-conflicts
             # Check if anything was retrieved. If not, everything is already deleted and we can skip destructive changes
-            number_of_files=`find force-app |wc -l`
-            number_of_files=$(( number_of_files - 1))
+            number_of_files=$(find delete/source |wc -l)
+            number_of_files=$(( number_of_files / 2 - 1))
+            echo ${number_of_files} components to be deleted from org, $(( num_components_marked_for_deletion - number_of_files)) already deleted.
             if [ ${number_of_files} -gt 0 ]; then
               # Convert to metadata format so we have a package.xml
-              mkdir -p "${project_name}"
-              sfdx force:source:convert -d "${project_name}" -r force-app --json
+              mkdir -p delete/package
+              echo "- Generating destructive change manifest..."
+              sf project convert source --root-dir=delete/source --output-dir=delete/package
               # Rename package.xml to destructiveChangesPre.xml
-              files_to_delete=`grep -c '<members>' "${project_name}/package.xml"`
-              mv "${project_name}/package.xml" "${project_name}/destructiveChangesPre.xml"
+              files_to_delete=`grep -c '<members>' delete/package/package.xml`
+              mv delete/package/package.xml delete/package/destructiveChangesPre.xml
               # Add the destructiveChangesPre.xml to the zipfile
               # It will be deployed later
-              zip -r "${zipfile_absolute}" "${project_name}/destructiveChangesPre.xml"
+              echo "- Adding destructive changes to metadata package..."
+              zip -r "${zipfile_absolute}" -j delete/package/destructiveChangesPre.xml
               echo "Ok! Added ${files_to_delete} destructive changes to ${zipfile_absolute}."
             else
               echo "No destructive changes to add."
             fi
-            popd >/dev/null
           fi
           echo
           
@@ -272,7 +266,7 @@ jobs:
         if: inputs.sonar-url != ''
 
       - name: retrieve Apex ruleset
-        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/WSS-46-Apex-PMD-Sonar/assets/pmd/apex-ruleset.xml
+        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/testing/assets/pmd/apex-ruleset.xml
         if: inputs.sonar-url != ''
 
       - name: run PMD static code analysis for Apex code
