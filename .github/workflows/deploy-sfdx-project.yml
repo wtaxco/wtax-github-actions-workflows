@@ -248,7 +248,7 @@ jobs:
             fi
           done)          
           echo "Deploying to ${{ inputs.username }}..."
-          sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}-${{ github.sha }}.zip" --wait=60
+          sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}-${{ github.sha }}.zip" --wait=180
 
       - name: install apex-code-coverage-transformer plugin
         run: sf plugins install apex-code-coverage-transformer
