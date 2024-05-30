@@ -159,7 +159,7 @@ jobs:
           echo '[ "@dxatscale/sfpowerscripts", "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
 
       - name: download metadata ZIP file
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: artifact
           path: target
