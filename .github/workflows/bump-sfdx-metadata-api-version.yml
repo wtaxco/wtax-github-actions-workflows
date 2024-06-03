@@ -26,27 +26,29 @@ jobs:
       - name: check out code
         uses: actions/checkout@v3
 
+      - name: git configure user.name and user.email
+        run: |
+          git config --global user.name '${{ github.actor }}'
+          git config --global user.email '${{ github.actor }}@users.noreply.github.com'
+
       - name: install jq
         run: sudo apt-get install -y jq
 
-      - name: find latest API version
-        id: api-version
-        run: curl -s ${{ inputs.instance-url }}/services/data/|jq -r '"api-version=" + .[].version'|sort|tail -1 >>$GITHUB_OUTPUT
-        if: inputs.api-version == null || inputs.api-version == ''
-
-      - name: bump API versions
-        run: find . -name '*-meta.xml' -exec sed -i 's/<apiVersion>\([^<]*\)<\/apiVersion>/<apiVersion>${{ inputs.api-version }}<\/apiVersion>/' '{}' \;
-        working-directory: ${{ inputs.source-directory }}
+      - name: use specified API version
+        run: echo "api_version=${{ inputs.api-version }}" >>$GITHUB_ENV
         if: inputs.api-version != null && inputs.api-version != ''
 
-      - name: bump API versions
-        run: find . -name '*-meta.xml' -exec sed -i 's/<apiVersion>\([^<]*\)<\/apiVersion>/<apiVersion>${{ steps.api-version.outputs.api-version }}<\/apiVersion>/' '{}' \;
-        working-directory: ${{ inputs.source-directory }}
+      - name: find latest API version
+        id: api-version
+        run: curl -s ${{ inputs.instance-url }}/services/data/|jq -r '"api_version=" + .[].version'|sort|tail -1 >>$GITHUB_ENV
         if: inputs.api-version == null || inputs.api-version == ''
 
-      - name: commit changes
+      - name: bump API versions
         run: |
-            git config --global user.name '${{ github.actor }}'
-            git config --global user.email '${{ github.actor }}@users.noreply.github.com'
-            git commit -am "${{ inputs.jira-issue }} Bumped API versions to ${{ inputs.api-version }}"
+            find . -name '*-meta.xml' -exec sed -i 's/<apiVersion>\([^<]*\)<\/apiVersion>/<apiVersion>${{ env.api_version }}<\/apiVersion>/' '{}' \;
+        working-directory: ${{ inputs.source-directory }}
+
+      - name: commit and push changes
+        run: |
+            git commit -am "${{ inputs.jira-issue }} Bumped API versions to ${{ env.api_version }}"
             git push
