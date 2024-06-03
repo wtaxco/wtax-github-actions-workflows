@@ -239,7 +239,7 @@ jobs:
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-            if [ "$path" == "${{ inputs.source-directory }}" -a "$(( inputs.run-tests ))" == "yes" ]; then
+            if [ "$path" == "${{ inputs.source-directory }}" -a "${{ inputs.run-tests }}" == "yes" ]; then
               sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunLocalTests --coverage-formatters=json --results-dir reports
             else
               sf project deploy start --source-dir $path --ignore-conflicts
