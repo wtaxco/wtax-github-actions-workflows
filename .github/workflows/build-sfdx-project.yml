@@ -239,8 +239,13 @@ jobs:
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-            if [ "$path" == "${{ inputs.source-directory }}" -a "${{ inputs.run-tests }}" == "yes" ]; then
-              sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunLocalTests --coverage-formatters=json --results-dir reports
+            if [ "${path}" == "${{ inputs.source-directory }}" -a "${{ inputs.run-tests }}" == "yes" ]; then
+              testflags=$(find ${path}/test -name '*.cls' | while read test; do
+                if ! grep -c '^\/\/ *DELETE$' "${test}" >/dev/null; then
+                  echo -n "--tests=`basename ${test} .cls` "
+                fi
+              done)          
+              sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunSpecifiedTests ${testflags}
             else
               sf project deploy start --source-dir $path --ignore-conflicts
             fi
