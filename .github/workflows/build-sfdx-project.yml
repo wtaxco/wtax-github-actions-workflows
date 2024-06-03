@@ -6,6 +6,11 @@ on:
         description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
         required: false
         default: force-app
+      run-tests:
+        type: string
+        description: whether to run the unit tests in source-directory when deploying the code in source-directory. Set to anything other than "yes" to not run tests.
+        required: false
+        default: yes
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -234,7 +239,7 @@ jobs:
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
           while read path; do
-            if [ "$path" == "${{ inputs.source-directory }}" ]; then
+            if [ "$path" == "${{ inputs.source-directory }}" -a "$(( inputs.run-tests ))" == "yes" ]; then
               sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunLocalTests --coverage-formatters=json --results-dir reports
             else
               sf project deploy start --source-dir $path --ignore-conflicts
