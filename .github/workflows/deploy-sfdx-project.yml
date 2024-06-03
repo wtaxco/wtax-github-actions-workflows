@@ -218,19 +218,21 @@ jobs:
             if grep "^${fullName}\$" target/org-apex.txt; then
               echo "    Scheduling ${type}:${fullName} for destruction"
               if [ "$type" == "ApexClass" ]; then
-                echo $path-meta.xml >>target/scheduled-for-destruction.txt
-                mkdir -p delete/source/classes/classes
-                mv $path $path-meta.xml delete/source/classes/classes
+                mkdir -p delete/source/classes
+                path=$(find ${source_directory} -name ${fullName}.cls)
+                echo ${path} >>target/scheduled-for-destruction.txt
+                mv $path $path-meta.xml delete/source/classes
               elif [ "$type" == "ApexTrigger" ]; then
-                echo $path-meta.xml >>target/scheduled-for-destruction.txt
-                mkdir -p delete/source/classes/triggers
+                mkdir -p delete/source/triggers
+                path=$(find ${source_directory} -name ${fullName}.trigger) 
+                echo "$path" >>target/scheduled-for-destruction.txt
                 mv $path $path-meta.xml delete/source/triggers
               else
-                echo $path-meta.xml >>target/cannot-destroy.txt
+                echo ${path} >>target/cannot-destroy.txt
                 echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
               fi
             else
-              echo $path-meta.xml >>target/already-destroyed.txt
+              echo ${path} >>target/already-destroyed.txt
             fi
           done
           
