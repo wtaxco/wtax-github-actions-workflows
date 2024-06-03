@@ -140,7 +140,7 @@ jobs:
           echo 'inputs.username = ${{ inputs.username }}' 
           echo 'inputs.run-tests = ${{ inputs.run-tests }}'
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@testing
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
     with:
       sonar-url: ${{ inputs.sonar-url }}
       sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
