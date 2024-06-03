@@ -6,25 +6,43 @@ on:
         description: Directory containing the main source of the project. Usually force-app, but can be something else. API versions will only be bumped in this directory.
         required: false
         default: force-app
+      instance-url:
+        type: string
+        description: Salesforce instance URL of the org to get the latest API version from. Required if `api-version` is omitted or empty.
+        required: false
       api-version:
         type: string
-        description: A Salesforce API version in the majorVersion.minorVersion format, e.g. 61.0
-        required: true
+        description: A Salesforce API version in the majorVersion.minorVersion format, e.g. 61.0. May be omitted if instance-url is provided, in which case the latest API version on the org referenced by instance-url will be used.
+        required: false
       jira-issue:
         type: string
         description: A Jira issue number to include in the commit message
         required: true
 jobs:
-  bump-api-version:
+  bump-api-versions:
     runs-on: ubuntu-latest
 
     steps:
       - name: check out code
         uses: actions/checkout@v3
 
+      - name: install jq
+        run: sudo apt-get install -y jq
+
+      - name: find latest API version
+        id: api-version
+        run: curl -s ${{ inputs.instance-url }}/services/data/|jq -r '"api-version=" + .[].version'|sort|tail -1 >>$GITHUB_OUTPUT
+        if: inputs.api-version == null || inputs.api-version == ''
+
       - name: bump API versions
         run: find . -name '*-meta.xml' -exec sed -i 's/<apiVersion>\([^<]*\)<\/apiVersion>/<apiVersion>${{ inputs.api-version }}<\/apiVersion>/' '{}' \;
         working-directory: ${{ inputs.source-directory }}
+        if: inputs.api-version != null && inputs.api-version != ''
+
+      - name: bump API versions
+        run: find . -name '*-meta.xml' -exec sed -i 's/<apiVersion>\([^<]*\)<\/apiVersion>/<apiVersion>${{ steps.api-version.outputs.api-version }}<\/apiVersion>/' '{}' \;
+        working-directory: ${{ inputs.source-directory }}
+        if: inputs.api-version == null || inputs.api-version == ''
 
       - name: commit changes
         run: |
