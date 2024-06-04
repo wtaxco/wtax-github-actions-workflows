@@ -122,7 +122,7 @@ on:
 
 jobs:
   send-predeploy-slack-notification:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@WSS-45-Fix-destructive-change-scripts
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
