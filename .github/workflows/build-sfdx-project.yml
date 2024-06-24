@@ -237,6 +237,33 @@ jobs:
       - name: run scripts
         run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done || echo "No pre-test scripts to run."
 
+      - name: determine which Apex classes and triggers are marked for deletion (have a "//DELETE" line)
+        run: |
+          mkdir target
+          grep -r '^\/\/ *DELETE$' "${{ inputs.source-directory }}"|awk -F':' '{print $1}'|while read line; do
+            echo -n $line
+            filename=`basename $line`
+            ext=${filename##*.}
+            if [ "${ext}" == "cls" ]; then
+              apexClass=`basename $filename .cls`
+              echo ',ApexClass,'$apexClass
+            elif [ "${ext}" == "trigger" ]; then
+              apexTrigger=`basename $filename .trigger`
+              echo ',ApexTrigger,'$apexTrigger
+            fi
+          done >target/deletes.csv
+          echo "`wc -l <target/deletes.csv` component(s) marked for deletion"
+
+      - name: delete metadata marked as //DELETE
+        run: |
+          echo "Removing Apex classes and triggers marked as deleted from source directory..."
+          awk -F, '{print "path=\""$1"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
+            eval $line
+            echo Deleting $fullName
+            # Remove files
+            rm $path $path-meta.xml
+          done
+
       - name: push sources to scratch org and run tests for source-directory
         run: |
           set -o pipefail
