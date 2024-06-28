@@ -29,7 +29,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
