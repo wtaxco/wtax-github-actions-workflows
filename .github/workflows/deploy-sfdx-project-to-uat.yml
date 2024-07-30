@@ -124,7 +124,7 @@ on:
         required: true
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@WSS-60-Fix-deletes-in-sfdx-deployments
     with:
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
