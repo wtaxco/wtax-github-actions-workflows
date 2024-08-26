@@ -49,17 +49,20 @@ jobs:
         run: curl -s ifconfig.me
       - name: remove crappy azure repo from APT sources
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt-get update
+        if: ${{ ! inputs.skip-prepare }}
       - name: install libxml2-utils
         run: sudo apt -y install libxml2-utils
+        if: ${{ ! inputs.skip-prepare }}
       - name: Check out project
         uses: actions/checkout@v3
+        if: ${{ ! inputs.skip-prepare }}
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
           distribution: zulu
           java-version: ${{ inputs.jdk-version }}
           cache: maven
-        if: github.event.inputs.skip-prepare != 'yes'
+        if: ${{ ! inputs.skip-prepare }}
       - name: maven-settings-xml-action
         uses: whelk-io/maven-settings-xml-action@v14
         with:
@@ -79,28 +82,30 @@ jobs:
                 "password": "${{ secrets.maven-repository-password }}" 
               }
             ]
+        if: ${{ ! inputs.skip-prepare }}
       - name: Configure Git user
         run: |
           git config user.email "github-actions@wtax.co"
           git config user.name "GitHub Actions"
-        if: github.event.inputs.skip-prepare != 'yes'
+        if: ${{ ! inputs.skip-prepare }}
       - name: Set release version to requested value
-        if: github.event.inputs.release-version != ''
-        run: echo 'VERSION=${{ github.event.inputs.release-version }}' >> $GITHUB_ENV
+        run: echo 'VERSION=${{ inputs.release-version }}' >> $GITHUB_ENV
+        if: ${{ ! inputs.skip-prepare }}
       - name: Deduce release version from current SNAPSHOT version
-        if: github.event.inputs.release-version == ''
         run: xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml | sed -e 's/\(.*\)-SNAPSHOT/VERSION=\1/' >> $GITHUB_ENV
+        if: ${{ ! inputs.skip-prepare && inputs.release-version == '' }}
       - name: Update POM file(s) with release version
         run: mvn -B versions:set -DnewVersion=${{ env.VERSION }}
-        if: github.event.inputs.skip-prepare != 'yes'
+        if: ${{ ! inputs.skip-prepare }}
       - name: Determine release branch
         run: echo RELEASE_BRANCH=release/v${{ env.VERSION }} >> $GITHUB_ENV
+        if: ${{ ! inputs.skip-prepare }}
       - name: Create release branch and push updated POM file
         run: git checkout -b ${{ env.RELEASE_BRANCH }} && git add pom.xml && git commit -m "[release] Update pom.xml to release version ${{ env.VERSION }}" && git push origin ${{ env.RELEASE_BRANCH }}
-        if: github.event.inputs.skip-prepare != true
+        if: ${{ ! inputs.skip-prepare }}
       - name: Update pom.xml to next development version on main branch
         run: git checkout main && mvn -B versions:set -DnewVersion=${{ env.VERSION }} && mvn -B release:update-versions -DautoVersionSubmodules=true && git add pom.xml && git commit -m "[release] Update pom.xml to next SNAPSHOT version" && git push
-        if: github.event.inputs.skip-prepare != true
+        if: ${{ ! inputs.skip-prepare }}
     outputs:
       release-version: ${{ env.VERSION }}
       release-branch: ${{ env.RELEASE_BRANCH }}
