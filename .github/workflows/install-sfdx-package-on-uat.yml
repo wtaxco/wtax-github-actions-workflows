@@ -25,7 +25,7 @@ on:
         type: string
         description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the target org
         required: false
-        default: 3MVG9DMdJCij4PmGRoL_xWsvynZ363dnIh_KEFDfNSNpx0MxOeGCaQJSTrJVWxncuIVGDn3mZucxszCY0UT73
+        default: 3MVG97IVyarqycDnyF28K2jE7z4J7KDxK93kejIoEPKNnVlcdq_Kojb85EMc74X1YBUOA2xF74Oe2lKBQbMn7
       jwt-key-encrypted:
         type: string
         description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
