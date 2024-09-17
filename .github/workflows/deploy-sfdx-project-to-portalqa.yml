@@ -116,6 +116,11 @@ on:
         description: Whether to run tests as part of the deployment. This is required when deploying to a production org.
         required: false
         default: true
+      destructive-changes-after-deployment:
+        type: boolean
+        description: Instruct Salesforce to apply destructive changes (i.e. deletes) after the deployment. This is the default. In some cases you may want to apply destructive changes before deploying. In that case, set this input to false.
+        required: false
+        default: true
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
@@ -129,5 +134,6 @@ jobs:
       username: ${{ inputs.username }}
       jwt-key-encrypted: ${{ inputs.jwt-key-encrypted }}
       run-tests: ${{ inputs.run-tests }}
+      destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
