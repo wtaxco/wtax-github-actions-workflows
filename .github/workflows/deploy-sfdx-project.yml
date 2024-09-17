@@ -234,7 +234,8 @@ jobs:
         if: ${{ !inputs.destructive-changes-after-deployment }}
 
       - name: do destructive changes after deployment
-        run: echo destructiveChangeManifestFile=destructiveChangesPost.xml >>$GITHUB_ENV
+        run: |
+          echo destructiveChangeManifestFile=destructiveChangesPost.xml >>$GITHUB_ENV
           echo destructiveChangeType=post >>$GITHUB_ENV
         if: inputs.destructive-changes-after-deployment
 
