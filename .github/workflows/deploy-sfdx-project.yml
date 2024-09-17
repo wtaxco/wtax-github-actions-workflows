@@ -228,11 +228,14 @@ jobs:
           path: target
 
       - name: do destructive changes before deployment
-        run: echo destructiveChangeManifestFile=destructiveChangesPre.xml >>$GITHUB_ENV
+        run: |
+          echo destructiveChangeManifestFile=destructiveChangesPre.xml >>$GITHUB_ENV
+          echo destructiveChangeType=pre >>$GITHUB_ENV
         if: ${{ !inputs.destructive-changes-after-deployment }}
 
-      - name: determine when to do destructive changes
+      - name: do destructive changes after deployment
         run: echo destructiveChangeManifestFile=destructiveChangesPost.xml >>$GITHUB_ENV
+          echo destructiveChangeType=post >>$GITHUB_ENV
         if: inputs.destructive-changes-after-deployment
 
       - name: create destructive change manifest for Apex classes/triggers marked with //DELETE
@@ -280,8 +283,8 @@ jobs:
           if [ ${scheduled_for_destruction} -gt 0 ]; then
             echo "- Generating destructive change manifest..."
             metadata_args=$(cat target/scheduled-for-destruction.txt|while read line; do echo -n "--metadata ${line} "; done)
-            sf project generate manifest ${metadata_args} --type pre --output-dir=target/${{ github.event.repository.name }}
-            echo "Ok! Added ${scheduled_for_destruction} destructive changes to target/${{ github.event.repository.name }}/destructiveChangesPre.xml."
+            sf project generate manifest ${metadata_args} --type ${destructiveChangeType} --output-dir=target/${{ github.event.repository.name }}
+            echo "Ok! Added ${scheduled_for_destruction} destructive changes to target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}."
           else
             echo "No destructive changes to add."
             cat <<EOF >target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}
