@@ -81,7 +81,13 @@
 
   <!-- NAMING -->
   <rule ref="category/apex/codestyle.xml/ClassNamingConventions"
-        message="Class names should begin with an uppercase character">
+        message="Class names should begin with an uppercase character optionally preceded by a lowercase prefix">
+    <properties>
+      <property name="testClassPattern" value="([a-z]+_)?[A-Z][a-zA-Z0-9_]*" />
+      <property name="abstractClassPattern" value="([a-z]+_)?[A-Z][a-zA-Z0-9_]*" />
+      <property name="classPattern" value="([a-z]+_)?[A-Z][a-zA-Z0-9_]*" />
+      <property name="interfacePattern" value="([a-z]+_)?[A-Z][a-zA-Z0-9_]*" />
+    </properties>
   </rule>
   <rule ref="category/apex/codestyle.xml/MethodNamingConventions"
         message="Method name does not begin with a lower case character.">
