@@ -311,7 +311,7 @@ jobs:
           sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}" --wait=${timeout}
 
       - name: install apex-code-coverage-transformer plugin
-        run: sf plugins install apex-code-coverage-transformer
+        run: sf plugins install apex-code-coverage-transformer@1.7.6
         if: inputs.sonar-url != ''
 
       - name: convert test coverage report to Sonarqube format

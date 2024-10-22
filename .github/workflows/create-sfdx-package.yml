@@ -294,7 +294,7 @@ jobs:
         if: inputs.sonar-url != ''
 
       - name: install apex-code-coverage-transformer plugin
-        run: sf plugins install apex-code-coverage-transformer
+        run: sf plugins install apex-code-coverage-transformer@1.7.6
         if: inputs.sonar-url != ''
 
       - name: convert test coverage report to Sonarqube format
