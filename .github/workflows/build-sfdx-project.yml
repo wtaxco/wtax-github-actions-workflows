@@ -1,6 +1,10 @@
 on:
   workflow_call:
     inputs:
+      scratch-org-pool-name:
+        type: string
+        description: Name of the scratch org pool to use for the scratch org
+        required: false
       source-directory:
         type: string
         description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
@@ -183,8 +187,14 @@ jobs:
               --set-default-dev-hub \
               --alias dev-hub
 
+      - name: fetch scratch org from pool
+        run: sf org pool fetch -p "${{ inputs.scratch-org-pool-name }}" -a scratch-org
+        if: ${{ inputs.scratch-org-pool-name != '' }}
+        continue-on-error: true
+
       - name: create scratch org
         run: sf org create scratch -w 15 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
+        if: ${{ inputs.scratch-org-pool-name == '' || failure() }}
 
       - name: write encrypted installation keys to file
         run: echo '${{ inputs.texei-installation-keys-encrypted }}' >texei-installation-keys.txt
