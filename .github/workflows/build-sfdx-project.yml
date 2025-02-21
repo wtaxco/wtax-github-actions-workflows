@@ -188,13 +188,12 @@ jobs:
               --alias dev-hub
 
       - name: fetch scratch org from pool
-        run: sf pool fetch -p "${{ inputs.scratch-org-pool-name }}" -a scratch-org
+        run: sf pool fetch -t "${{ inputs.scratch-org-pool-name }}" -v dev-hub -a scratch-org
         if: ${{ inputs.scratch-org-pool-name != '' }}
-        continue-on-error: true
 
       - name: create scratch org
         run: sf org create scratch -w 15 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
-        if: ${{ inputs.scratch-org-pool-name == '' || failure() }}
+        if: ${{ inputs.scratch-org-pool-name == '' }}
 
       - name: write encrypted installation keys to file
         run: echo '${{ inputs.texei-installation-keys-encrypted }}' >texei-installation-keys.txt
