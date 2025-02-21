@@ -188,7 +188,7 @@ jobs:
               --alias dev-hub
 
       - name: fetch scratch org from pool
-        run: sf org pool fetch -p "${{ inputs.scratch-org-pool-name }}" -a scratch-org
+        run: sf pool fetch -p "${{ inputs.scratch-org-pool-name }}" -a scratch-org
         if: ${{ inputs.scratch-org-pool-name != '' }}
         continue-on-error: true
 
