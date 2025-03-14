@@ -65,19 +65,6 @@ jobs:
                           "text": "*Deployed by:*\n${{ github.actor }}"
                         }
                       ]
-                    },
-                    {
-                      "type": "section",
-                      "fields": [
-                        {
-                          "type": "mrkdwn",
-                          "text": "*Workflow:*\n${{ github.workflow }}"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "*job:*\n${{ github.job }}"
-                        }
-                      ]
                     }
                 ]
               }
