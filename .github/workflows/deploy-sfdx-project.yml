@@ -258,31 +258,30 @@ jobs:
           >target/scheduled-for-destruction.txt
           >target/already-destroyed.txt
           >target/cannot-destroy.txt
-          awk -F, '{print "type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
+          awk -F, '{print "type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
             eval $line
             if [ "$type" == "ApexClass" ]; then
-              if grep -q "^${fullName}\$" target/org-apex-classes.txt; then
+              if grep "^${fullName}\$" target/org-apex-classes.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+                echo "${type}:${fullName}" >> target/scheduled-for-destruction.txt
               else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
+                echo "${type}:${fullName}" >> target/already-destroyed.txt
               fi
             elif [ "$type" == "ApexTrigger" ]; then
-              if grep -q "^${fullName}\$" target/org-apex-triggers.txt; then
+              if grep "^${fullName}\$" target/org-apex-triggers.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >> target/scheduled-for-destruction.txt
               else
                 echo "${type}:${fullName}" >> target/already-destroyed.txt
               fi
             elif [ "$type" == "ApexPage" ]; then
-              if grep -q "^${fullName}\$" target/org-apex-pages.txt; then
+              if grep "^${fullName}\$" target/org-apex-pages.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+                echo "${type}:${fullName}" >> target/scheduled-for-destruction.txt
               else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
+                echo "${type}:${fullName}" >> target/already-destroyed.txt
               fi
             else
-              echo "${type}:${fullName}" >>target/cannot-destroy.txt
               echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
             fi
           done
@@ -293,7 +292,7 @@ jobs:
           echo "${scheduled_for_destruction} component(s) to be deleted from org, ${already_destroyed} already deleted (cannot delete ${cannot_destroy})."
           if [ ${scheduled_for_destruction} -gt 0 ]; then
             echo "- Generating destructive change manifest..."
-            metadata_args=$(cat target/scheduled-for-destruction.txt|while read line; do echo -n "--metadata ${line} "; done)
+            metadata_args=$(cat target/scheduled-for-destruction.txt | while read line; do echo -n "--metadata ${line} "; done)
             sf project generate manifest ${metadata_args} --type ${destructiveChangeType} --output-dir=target/${{ github.event.repository.name }}
             echo "Ok! Added ${scheduled_for_destruction} destructive changes to target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}."
           else
