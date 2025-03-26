@@ -106,10 +106,10 @@ jobs:
           mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
           sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
 
-      - name: determine which Apex classes and triggers are marked for deletion (have a "//DELETE" line)
+      - name: determine which Apex classes, triggers, and Visualforce pages are marked for deletion (have a "//DELETE" line)
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->$)' "${metadata_directory}"|awk -F':' '{print $1}'|while read line; do
+          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->$)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
             echo -n $line
             filename=`basename $line`
             ext=${filename##*.}
@@ -119,9 +119,12 @@ jobs:
             elif [ "${ext}" == "trigger" ]; then
               apexTrigger=`basename $filename .trigger`
               echo ',ApexTrigger,'$apexTrigger
+            elif [ "${ext}" == "page" ]; then  # Add this for Visualforce pages
+              apexPage=`basename $filename .page`
+              echo ',ApexPage,'$apexPage
             fi
-          done >target/deletes.csv
-          echo "`wc -l <target/deletes.csv` component(s) marked for deletion"
+          done > target/deletes.csv
+          echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
 
       - name: archive deletes.csv
         uses: actions/upload-artifact@v4
