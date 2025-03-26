@@ -263,9 +263,9 @@ jobs:
             if [ "$type" == "ApexClass" ]; then
               if grep "^${fullName}\$" target/org-apex-classes.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >> target/scheduled-for-destruction.txt
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
-                echo "${type}:${fullName}" >> target/already-destroyed.txt
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
               fi
             elif [ "$type" == "ApexTrigger" ]; then
               if grep "^${fullName}\$" target/org-apex-triggers.txt; then
@@ -282,7 +282,7 @@ jobs:
                 echo "${type}:${fullName}" >>target/already-destroyed.txt
               fi
             else
-              echo "${type}:${fullName}" >>target/cannot-destroy.txt	
+              echo "${type}:${fullName}" >>target/cannot-destroy.txt
               echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
             fi
           done
