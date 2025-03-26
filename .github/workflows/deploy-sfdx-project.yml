@@ -282,6 +282,7 @@ jobs:
                 echo "${type}:${fullName}" >>target/already-destroyed.txt
               fi
             else
+              echo "${type}:${fullName}" >>target/cannot-destroy.txt	
               echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
             fi
           done
