@@ -109,7 +109,7 @@ jobs:
       - name: determine which Apex classes and triggers are marked for deletion (have a "//DELETE" line)
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          grep -r '^\/\/ *DELETE$' "${metadata_directory}"|awk -F':' '{print $1}'|while read line; do
+          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->$)' "${metadata_directory}"|awk -F':' '{print $1}'|while read line; do
             echo -n $line
             filename=`basename $line`
             ext=${filename##*.}
@@ -129,29 +129,27 @@ jobs:
           name: deletes.csv
           path: target/deletes.csv
 
-      - name: remove Apex classes and triggers marked as deleted from metadata
+      - name: remove Apex classes, triggers, and Visualforce pages marked as deleted from metadata
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          >target/deletes-apexClasses.txt
-          echo "Removing Apex classes and triggers marked as deleted from metadata directory..."
-          awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
+          >target/deletes-apexComponents.txt
+          echo "Removing Apex classes, triggers, and Visualforce pages marked as deleted from metadata directory..."
+
+          awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
             eval $line
             # Remove files
-            rm $path $path-meta.xml
-            # Remove component from package manifest.
-            # NOTE: This doesn't guarantee that the member is being removed (only) from the correct type section. E.g. 
-            #       if there is both an ApexClass and an AuraDefinitionBundle with the same full name and the ApexClass
-            #       was marked as deleted, this would also remove the AuraDefinitionBundle from the package manifest.
+            rm -f $path $path-meta.xml
+            # Remove component from package manifest
             sed -i.bak "/<members>${fullName}<\\/members>/d" ${metadata_directory}/package.xml
-          
-            # While we're looping over the components to be deleted; save just the Apex class names to a separate
-            # file. This will come in handy when determining which Apex tests there are in the project.
-            if [ "$type" == "ApexClass" ]; then
-              echo "${fullName}" >>target/deletes-apexClasses.txt
+
+            # Save deleted component names (ApexClass, ApexTrigger, ApexPage) to the same file
+            if [[ "$type" == "ApexClass" || "$type" == "ApexPage" || "$type" == "ApexTrigger" ]]; then
+              echo "${fullName}" >> target/deletes-apexComponents.txt
             fi
           done
+
           rm -f ${metadata_directory}/package.xml.bak
-          echo "`wc -l <target/deletes.csv` Apex class(es) and trigger(s) removed from metadata directory."
+          echo "`wc -l <target/deletes.csv` Apex class(es), trigger(s), and Visualforce page(s) removed from metadata directory."
 
       - name: find unit test classes in project
         run: |
@@ -239,18 +237,20 @@ jobs:
           echo destructiveChangeType=post >>$GITHUB_ENV
         if: inputs.destructive-changes-after-deployment
 
-      - name: create destructive change manifest for Apex classes/triggers marked with //DELETE
+      - name: create destructive change manifest for Apex classes, triggers, and Visualforce pages marked with //DELETE
         run: |
-          echo Creating destructive change manifest for Apex classes/triggers marked with //DELETE
+          echo "Creating destructive change manifest for Apex classes, triggers, and Visualforce pages marked with //DELETE"
+
           # Set some variables
           target_org="${{ inputs.username }}"
-          
-          # Get list of Apex classes and triggers on org
-          echo - Getting list of Apex classes and triggers on org
-          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexClass' --json|jq -r '.result.records[].Name' >target/org-apex-classes.txt
-          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json|jq -r '.result.records[].Name' >target/org-apex-triggers.txt
 
-          # Move Apex classes and triggers that still exist on org to delete/source
+          # Get list of Apex classes, triggers, and Visualforce pages on org
+          echo "- Getting list of Apex classes, triggers, and Visualforce pages on org"
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexClass' --json | jq -r '.result.records[].Name' > target/org-apex-classes.txt
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json | jq -r '.result.records[].Name' > target/org-apex-triggers.txt
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexPage' --json | jq -r '.result.records[].Name' > target/org-apex-pages.txt
+
+          # Move Apex classes, triggers and Visualforce pages that still exist on org to delete/source
           echo - Filtering components that still exist on org
           >target/scheduled-for-destruction.txt
           >target/already-destroyed.txt
@@ -258,14 +258,21 @@ jobs:
           awk -F, '{print "type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
             eval $line
             if [ "$type" == "ApexClass" ]; then
-              if grep "^${fullName}\$" target/org-apex-classes.txt; then
+              if grep -q "^${fullName}\$" target/org-apex-classes.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
                 echo "${type}:${fullName}" >>target/already-destroyed.txt
               fi
             elif [ "$type" == "ApexTrigger" ]; then
-              if grep "^${fullName}\$" target/org-apex-triggers.txt; then
+              if grep -q "^${fullName}\$" target/org-apex-triggers.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >> target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >> target/already-destroyed.txt
+              fi
+            elif [ "$type" == "ApexPage" ]; then
+              if grep -q "^${fullName}\$" target/org-apex-pages.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
@@ -276,10 +283,10 @@ jobs:
               echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
             fi
           done
-          
-          scheduled_for_destruction=$(wc -l <target/scheduled-for-destruction.txt)
-          already_destroyed=$(wc -l <target/already-destroyed.txt)
-          cannot_destroy=$(wc -l <target/cannot-destroy.txt)
+
+          scheduled_for_destruction=$(wc -l < target/scheduled-for-destruction.txt)
+          already_destroyed=$(wc -l < target/already-destroyed.txt)
+          cannot_destroy=$(wc -l < target/cannot-destroy.txt)
           echo "${scheduled_for_destruction} component(s) to be deleted from org, ${already_destroyed} already deleted (cannot delete ${cannot_destroy})."
           if [ ${scheduled_for_destruction} -gt 0 ]; then
             echo "- Generating destructive change manifest..."
