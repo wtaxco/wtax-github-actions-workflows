@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   build:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/install-sfdx-package.yml-on-prod@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/install-sfdx-package.yml-on-prod@testing
     with:
       source-directory: ${{ inputs.source-directory }}
       version-number: ${{ inputs.version-number }}
