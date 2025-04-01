@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-portalqa.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-portalqa.yml@testing
     with:
       run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
     secrets:

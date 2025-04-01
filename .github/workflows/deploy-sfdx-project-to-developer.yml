@@ -138,7 +138,7 @@ on:
         required: true
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@testing
     with:
       sonar-url: ${{ inputs.sonar-url }}
       sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
