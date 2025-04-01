@@ -134,7 +134,7 @@ on:
         required: true
 jobs:
   install-package-on-prod:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/install-sfdx-package.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/install-sfdx-package.yml@testing
     with:
       package: ${{ inputs.package }}
       version-number: ${{ inputs.version-number }}

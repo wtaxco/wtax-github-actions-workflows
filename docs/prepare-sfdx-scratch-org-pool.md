@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/prepare-sfdx-scratch-org-pool.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/prepare-sfdx-scratch-org-pool.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
