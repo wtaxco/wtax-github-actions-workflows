@@ -109,7 +109,7 @@ jobs:
       - name: determine which components are marked for deletion (have a "//DELETE" line)
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->$)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
+          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
             echo -n $line
             filename=`basename $line`
             ext=${filename##*.}
