@@ -110,19 +110,25 @@ jobs:
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
           grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
-            echo -n $line
             filename=`basename $line`
             ext=${filename##*.}
-            if [ "${ext}" == "cls" ]; then
-              apexClass=`basename $filename .cls`
-              echo ',ApexClass,'$apexClass
-            elif [ "${ext}" == "trigger" ]; then
-              apexTrigger=`basename $filename .trigger`
-              echo ',ApexTrigger,'$apexTrigger
-            elif [ "${ext}" == "page" ]; then  # Add this for Visualforce pages
-              apexPage=`basename $filename .page`
-              echo ',ApexPage,'$apexPage
+            if [ "${ext}" == "cls" ]; then  # Apex classes
+              component=`basename $filename .cls`
+              type=ApexClass
+            elif [ "${ext}" == "trigger" ]; then  # Apex triggers
+              component=`basename $filename .trigger`
+              type=ApexTrigger
+            elif [ "${ext}" == "page" ]; then  # Visualforce pages
+              component=`basename $filename .page`
+              type=ApexPage
+            elif [ "${ext}" == "component" ]; then  # Visualforce components
+              component=`basename $filename .component`
+              type=ApexComponent
+            else
+              component=`basename $filename .$ext`  # Strip off the extension and assume the base file name is the component's full name
+              type=Unknown
             fi
+            echo "${line},${type},${component}"
           done > target/deletes.csv
           echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
 
@@ -152,7 +158,7 @@ jobs:
             # While we're looping over the components to be deleted; save just the Apex class names to a separate
             # file. This will come in handy when determining which Apex tests there are in the projec
             if [[ "$type" == "ApexClass" ]]; then
-            echo "${fullName}" >> target/deletes-apexClasses.txt
+              echo "${fullName}" >> target/deletes-apexClasses.txt
             fi
           done
 
@@ -245,9 +251,9 @@ jobs:
           echo destructiveChangeType=post >>$GITHUB_ENV
         if: inputs.destructive-changes-after-deployment
 
-      - name: create destructive change manifest for components marked with //DELETE
+      - name: create destructive change manifest for components marked for deletion
         run: |
-          echo "Creating destructive change manifest for components marked with //DELETE"
+          echo "Creating destructive change manifest for components marked for deletion"
 
           # Set some variables
           target_org="${{ inputs.username }}"
@@ -257,6 +263,7 @@ jobs:
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexClass' --json | jq -r '.result.records[].Name' > target/org-apex-classes.txt
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json | jq -r '.result.records[].Name' > target/org-apex-triggers.txt
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexPage' --json | jq -r '.result.records[].Name' > target/org-apex-pages.txt
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
 
           # Move components that still exist on org to delete/source
           echo - Filtering components that still exist on org
@@ -281,6 +288,13 @@ jobs:
               fi
             elif [ "$type" == "ApexPage" ]; then
               if grep "^${fullName}\$" target/org-apex-pages.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "ApexComponent" ]; then
+              if grep "^${fullName}\$" target/org-apex-components.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
