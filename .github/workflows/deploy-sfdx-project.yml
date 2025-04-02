@@ -110,22 +110,22 @@ jobs:
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
           grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
-            filename=`basename $line`
+            filename=`basename "$line"`
             ext=${filename##*.}
+            component=`basename "$filename" .$ext`  # Strip off the extension and assume the base file name is the component's full name
             if [ "${ext}" == "cls" ]; then  # Apex classes
-              component=`basename $filename .cls`
               type=ApexClass
             elif [ "${ext}" == "trigger" ]; then  # Apex triggers
-              component=`basename $filename .trigger`
               type=ApexTrigger
             elif [ "${ext}" == "page" ]; then  # Visualforce pages
-              component=`basename $filename .page`
               type=ApexPage
             elif [ "${ext}" == "component" ]; then  # Visualforce components
-              component=`basename $filename .component`
               type=ApexComponent
+            elif [ "${ext}" == "network" ]; then  # Network (digital experience)
+              type=Network
+            elif [ "${ext}" == "site" ]; then  # Site
+              type=Site
             else
-              component=`basename $filename .$ext`  # Strip off the extension and assume the base file name is the component's full name
               type=Unknown
             fi
             echo "${line},${type},${component}"
@@ -141,29 +141,28 @@ jobs:
       - name: remove components marked as deleted from metadata
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          >target/deletes-apexComponents.txt
+          >target/deletes-apexClasses.txt
           echo "Removing components marked as deleted from metadata directory..."
 
           awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
             eval $line
             # Remove files
-            rm -f $path $path-meta.xml
+            rm $path $path-meta.xml
             # Remove component from package manifest.
             # NOTE: This doesn't guarantee that the member is being removed (only) from the correct type section. E.g. 
             #       if there is both an ApexClass and an AuraDefinitionBundle with the same full name and the ApexClass
             #       was marked as deleted, this would also remove the AuraDefinitionBundle from the package manifest.
-          
             sed -i.bak "/<members>${fullName}<\\/members>/d" ${metadata_directory}/package.xml
 
             # While we're looping over the components to be deleted; save just the Apex class names to a separate
-            # file. This will come in handy when determining which Apex tests there are in the projec
-            if [[ "$type" == "ApexClass" ]]; then
+            # file. This will come in handy when determining which Apex tests there are in the project.
+            if [ "$type" == "ApexClass" ]; then
               echo "${fullName}" >> target/deletes-apexClasses.txt
             fi
           done
 
           rm -f ${metadata_directory}/package.xml.bak
-          echo "`wc -l <target/deletes.csv` Apex class(es), trigger(s), and Visualforce page(s) removed from metadata directory."
+          echo "`wc -l <target/deletes.csv` components removed from metadata directory."
 
       - name: find unit test classes in project
         run: |
@@ -264,6 +263,8 @@ jobs:
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json | jq -r '.result.records[].Name' > target/org-apex-triggers.txt
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexPage' --json | jq -r '.result.records[].Name' > target/org-apex-pages.txt
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
+          sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
+          sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
 
           # Move components that still exist on org to delete/source
           echo - Filtering components that still exist on org
@@ -295,6 +296,20 @@ jobs:
               fi
             elif [ "$type" == "ApexComponent" ]; then
               if grep "^${fullName}\$" target/org-apex-components.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Network" ]; then
+              if grep "^${fullName}\$" target/org-networks.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Site" ]; then
+              if grep "^${fullName}\$" target/org-sites.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
