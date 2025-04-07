@@ -244,3 +244,21 @@ jobs:
 
       - name: install package
         run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" --apex-compile package --upgrade-type Mixed --wait 15
+
+      - name: check out code
+        uses: actions/checkout@v4
+
+      - name: find post-deploy scripts
+        id: find-post-deploy-scripts
+        run: |
+          mkdir -p deploy/hooks/post-deploy
+          ls deploy/hooks/post-deploy/*.sh > post_deploy_scripts.txt || echo "No post-deploy scripts found" > post_deploy_scripts.txt
+
+      - name: execute post-deploy scripts
+        if: ${{ env.post_deploy_scripts != '' }}
+        run: |
+          while IFS= read -r script; do
+            if [ -f "$script" ]; then
+              bash "$script"
+            fi
+          done < post_deploy_scripts.txt
