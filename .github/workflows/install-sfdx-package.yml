@@ -155,14 +155,6 @@ on:
         description: Username of Salesforce user to authenticate as on the Dev Hub org; must have permission to create scratch orgs
         required: false
         default: admin@wtax.prod
-      repo:
-        type: string
-        description: Repository containing the code to be deployed
-        required: false
-      commit:
-        type: string
-        description: Commit SHA from which the workflow is called
-        required: false
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
@@ -253,23 +245,20 @@ jobs:
       - name: install package
         run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" --apex-compile package --upgrade-type Mixed --wait 15
 
-      - name: check out code from specified repository
-        if: ${{ inputs.repo != '' && inputs.commit != '' }}
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ inputs.repo }}
-          ref: ${{ inputs.commit }}
+      - name: check out code
+        uses: actions/checkout@v4
 
-      - name: find post-deploy workflows
-        id: find-post-deploy-workflows
-        if: ${{ inputs.repo != '' && inputs.commit != '' }}
+      - name: find post-deploy scripts
+        id: find-post-deploy-scripts
         run: |
-          post_deploy_workflows=$(find . -name 'post-deploy-*.yml')
-          echo "post_deploy_workflows=$post_deploy_workflows" >> $GITHUB_ENV
+          mkdir -p deploy/hooks/post-deploy
+          ls deploy/hooks/post-deploy/*.sh > post_deploy_scripts.txt || echo "No post-deploy scripts found" > post_deploy_scripts.txt
 
-      - name: execute post-deploy workflows
-        if: ${{ inputs.repo != '' && inputs.commit != '' && env.post_deploy_workflows != '' }}
+      - name: execute post-deploy scripts
+        if: ${{ env.post_deploy_scripts != '' }}
         run: |
-          for workflow in ${{ env.post_deploy_workflows }}; do
-            gh workflow run $workflow
-          done
+          while IFS= read -r script; do
+            if [ -f "$script" ]; then
+              bash "$script"
+            fi
+          done < post_deploy_scripts.txt
