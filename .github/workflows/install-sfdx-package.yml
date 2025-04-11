@@ -252,13 +252,11 @@ jobs:
         id: find-post-deploy-scripts
         run: |
           mkdir -p deploy/hooks/post-deploy
-          ls deploy/hooks/post-deploy/*.sh > post_deploy_scripts.txt || echo "No post-deploy scripts found" > post_deploy_scripts.txt
+          ls deploy/hooks/post-deploy/*.sh > post_deploy_scripts.txt 2>/dev/null && echo "scripts_found=true" >> $GITHUB_ENV || { echo "No post-deploy scripts found"; echo "scripts_found=false" >> $GITHUB_ENV; }
 
       - name: execute post-deploy scripts
-        if: ${{ env.post_deploy_scripts != '' }}
+        if: ${{ env.scripts_found == 'true' }}
         run: |
-          while IFS= read -r script; do
-            if [ -f "$script" ]; then
-              bash "$script"
-            fi
+          while read -r script; do
+            bash "$script" < /dev/null
           done < post_deploy_scripts.txt
