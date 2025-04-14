@@ -165,9 +165,11 @@ jobs:
 
     steps:
       - name: check out code (sfdx-project.json only)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          sparse-checkout: sfdx-project.json
+          sparse-checkout: |
+            sfdx-project.json
+            deploy
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -212,7 +214,8 @@ jobs:
               --jwt-key-file=.jwt-key \
               --instance-url=${{ inputs.instance-url }} \
               --username=${{ inputs.username }} \
-              --set-default
+              --set-default \
+              --alias target-org
 
       - name: write encrypted installation key to file
         run: echo '${{ inputs.installation-key-encrypted }}' >installation-key.txt
@@ -243,16 +246,11 @@ jobs:
         if: env.package == ''
 
       - name: install package
-        run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" --apex-compile package --upgrade-type Mixed --wait 15
-
-      - name: check out code
-        uses: actions/checkout@v4
+        run: sf package install --package "${package}" --installation-key "${installation_key_decrypted}" --apex-compile package --upgrade-type Mixed --wait 15 -o target-org
 
       - name: find post-deploy scripts
         id: find-post-deploy-scripts
-        run: |
-          mkdir -p deploy/hooks/post-deploy
-          ls deploy/hooks/post-deploy/*.sh >post_deploy_scripts.txt 2>/dev/null || echo "No post-deploy scripts found"
+        run: ls deploy/hooks/post-deploy/*.sh >post_deploy_scripts.txt 2>/dev/null || echo "No post-deploy scripts found"
 
       - name: execute post-deploy scripts
         run: |
