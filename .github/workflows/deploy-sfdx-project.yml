@@ -106,27 +106,33 @@ jobs:
           mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
           sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
 
-      - name: determine which components are marked for deletion (have a "//DELETE" line)
+      - name: determine which components are marked for deletion (have a "//DELETE" or "<!-- DELETE -->" line)
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
           grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
             filename=`basename "$line"`
-            ext=${filename##*.}
-            component=`basename "$filename" .$ext`  # Strip off the extension and assume the base file name is the component's full name
-            if [ "${ext}" == "cls" ]; then  # Apex classes
-              type=ApexClass
-            elif [ "${ext}" == "trigger" ]; then  # Apex triggers
-              type=ApexTrigger
-            elif [ "${ext}" == "page" ]; then  # Visualforce pages
-              type=ApexPage
-            elif [ "${ext}" == "component" ]; then  # Visualforce components
-              type=ApexComponent
-            elif [ "${ext}" == "network" ]; then  # Network (digital experience)
-              type=Network
-            elif [ "${ext}" == "site" ]; then  # Site
-              type=Site
+
+            if [[ "$filename" == *.flow-meta.xml ]]; then
+              component="${filename%.flow-meta.xml}"
+              type=Flow
             else
-              type=Unknown
+              ext=${filename##*.}
+              component=`basename "$filename" .$ext`  # Strip off the extension and assume the base file name is the component's full name
+              if [ "${ext}" == "cls" ]; then  # Apex classes
+                type=ApexClass
+              elif [ "${ext}" == "trigger" ]; then  # Apex triggers
+                type=ApexTrigger
+              elif [ "${ext}" == "page" ]; then  # Visualforce pages
+                type=ApexPage
+              elif [ "${ext}" == "component" ]; then  # Visualforce components
+                type=ApexComponent
+              elif [ "${ext}" == "network" ]; then  # Network (digital experience)
+                type=Network
+              elif [ "${ext}" == "site" ]; then  # Site
+                type=Site
+              else
+                type=Unknown
+              fi
             fi
             echo "${line},${type},${component}"
           done > target/deletes.csv
@@ -265,6 +271,7 @@ jobs:
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
           sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
           sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
+          sf data query -t -o ${target_org} -q "SELECT ApiName FROM FlowDefinitionView WHERE IsActive = false" --json | jq -r '.result.records[].ApiName' > target/org-flows.txt
 
           # Move components that still exist on org to delete/source
           echo - Filtering components that still exist on org
@@ -310,6 +317,13 @@ jobs:
               fi
             elif [ "$type" == "Site" ]; then
               if grep "^${fullName}\$" target/org-sites.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Flow" ]; then
+              if grep "^${fullName}\$" target/org-flows.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
