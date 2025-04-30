@@ -149,7 +149,10 @@ jobs:
           awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
             eval $line
             # Remove files
-            rm $path $path-meta.xml
+            rm $path
+            if [ "$type" != "Flow" ]; then
+                rm $path-meta.xml
+            fi
             # Remove component from package manifest.
             # NOTE: This doesn't guarantee that the member is being removed (only) from the correct type section. E.g. 
             #       if there is both an ApexClass and an AuraDefinitionBundle with the same full name and the ApexClass
