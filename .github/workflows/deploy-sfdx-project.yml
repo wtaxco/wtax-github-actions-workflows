@@ -125,7 +125,7 @@ jobs:
               type=Network
             elif [ "${ext}" == "site" ]; then  # Site
               type=Site
-            elif [ "${ext}" == ".flow-meta.xml" ]; then  # Flow
+            elif [ "${ext}" == "flow" ]; then  # Flow
               type=Flow
             else
               type=Unknown
