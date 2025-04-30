@@ -125,6 +125,8 @@ jobs:
               type=Network
             elif [ "${ext}" == "site" ]; then  # Site
               type=Site
+            elif [ "${ext}" == ".flow-meta.xml" ]; then  # Flow
+              type=Flow
             else
               type=Unknown
             fi
@@ -265,6 +267,7 @@ jobs:
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
           sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
           sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
+          sf data query -o ${target_org} -q 'SELECT Name FROM FlowDefinition' --json | jq -r '.result.records[].Name' > target/org-flows.txt
 
           # Move components that still exist on org to delete/source
           echo - Filtering components that still exist on org
@@ -310,6 +313,13 @@ jobs:
               fi
             elif [ "$type" == "Site" ]; then
               if grep "^${fullName}\$" target/org-sites.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Flow" ]; then
+              if grep "^${fullName}\$" target/org-flows.txt; then
                 echo "    Scheduling ${type}:${fullName} for destruction"
                 echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
               else
