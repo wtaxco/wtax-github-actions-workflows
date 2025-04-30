@@ -267,7 +267,7 @@ jobs:
           sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
           sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
           sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
-          sf data query -o ${target_org} -q 'SELECT DeveloperName FROM FlowDefinition' --json | jq -r '.result.records[].DeveloperName' > target/org-flows.txt
+          sf data query -o ${target_org} -q 'SELECT DeveloperName FROM FlowDefinition' --usetoolingapi --json | jq -r '.result.records[].DeveloperName' > target/org-flows.txt
 
           # Move components that still exist on org to delete/source
           echo - Filtering components that still exist on org
