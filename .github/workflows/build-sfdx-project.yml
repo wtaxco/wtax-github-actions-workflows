@@ -282,11 +282,16 @@ jobs:
               echo Skipping empty package directory ${path}
             else
               if [ "${path}" == "${{ inputs.source-directory }}" -a "${{ inputs.run-tests }}" == "yes" ]; then
-                testflags=$(find ${path}/test -name '*.cls' | while read test; do
-                  if ! grep -c '^\/\/ *DELETE$' "${test}" >/dev/null; then
-                    echo -n "--tests=`basename ${test} .cls` "
-                  fi
-                done)          
+                testflags=""
+                if [ -d "${path}/test" ]; then
+                  testflags=$(find ${path}/test -name '*.cls' | while read test; do
+                    if ! grep -c '^\/\/ *DELETE$' "${test}" >/dev/null; then
+                      echo -n "--tests=`basename ${test} .cls` "
+                    fi
+                  done)
+                else
+                  echo "No test classes found in ${path}/test."
+                fi
                 sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunSpecifiedTests ${testflags}
               else
                 sf project deploy start --source-dir $path --ignore-conflicts
