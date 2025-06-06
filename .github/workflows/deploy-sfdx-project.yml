@@ -172,10 +172,15 @@ jobs:
       - name: find unit test classes in project
         run: |
           echo "Finding unit tests in project..."
-          find force-app/test -name '*.cls' | while read test; do
-            testClass="$(basename "${test}" .cls)"
-            grep "${testClass}" target/deletes-apexClasses.txt >/dev/null || echo "${testClass}" >>target/test-classes.txt
-          done
+          if [ -d "force-app/test" ]; then
+            find force-app/test -name '*.cls' | while read test; do
+              testClass="$(basename "${test}" .cls)"
+              grep "${testClass}" target/deletes-apexClasses.txt >/dev/null || echo "${testClass}" >>target/test-classes.txt
+            done
+          else
+            echo "No force-app/test directory found. Skipping task."
+            touch target/test-classes.txt  # Prevent downstream issues
+          fi
 
       - name: archive test-classes.txt
         uses: actions/upload-artifact@v4
