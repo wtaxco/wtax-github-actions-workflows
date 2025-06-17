@@ -162,7 +162,7 @@ jobs:
         run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
 
       - name: install Salesforce CLI
-        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
 
       - name: create unsigned plugin allowlist
         run: |

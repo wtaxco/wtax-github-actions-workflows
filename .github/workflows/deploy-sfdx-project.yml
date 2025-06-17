@@ -211,7 +211,7 @@ jobs:
           node-version: 18.x
 
       - name: install Salesforce CLI
-        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
 
       - name: create unsigned plugin allowlist
         run: |
