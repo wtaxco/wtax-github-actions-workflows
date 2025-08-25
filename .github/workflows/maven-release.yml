@@ -120,7 +120,6 @@ jobs:
         with:
           distribution: zulu
           java-version: ${{ inputs.jdk-version }}
-          cache: maven
       - name: maven-settings-xml-action
         uses: whelk-io/maven-settings-xml-action@v14
         with:
