@@ -67,9 +67,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: dependency-check-data
-          key: "${{ runner.os }}-dependency-check-database-${{ hashFiles('dependency-check-data/nvdcve-1.1-modified.meta') }}"
+          key: "${{ runner.os }}-dependency-check-database-v12-${{ hashFiles('dependency-check-data/nvdcve-1.1-modified.meta') }}"
           restore-keys: |
-            ${{ runner.os }}-dependency-check-database-
+            ${{ runner.os }}-dependency-check-database-v12-
       - name: Build with Maven
         run: mvn ${{ env.GOALS }} -Dsonar.host.url=${{ inputs.sonar-url }} -Dsonar.login="${{ secrets.sonar-login }}" -DdataDirectory=dependency-check-data
       - name: Archive artifacts
