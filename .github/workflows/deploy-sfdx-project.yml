@@ -68,6 +68,10 @@ on:
         description: Instruct Salesforce to apply destructive changes (i.e. deletes) after the deployment. This is the default. In some cases you may want to apply destructive changes before deploying. In that case, set this input to false.
         required: false
         default: true
+      environment:
+        type: string
+        description: Name of the approval environment
+        required: false
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
@@ -195,6 +199,7 @@ jobs:
           path: target/${{ github.event.repository.name }}-${{ github.sha }}
 
   deploy:
+    environment: ${{ inputs.environment }}
     needs:
       - build
     runs-on: ubuntu-latest
