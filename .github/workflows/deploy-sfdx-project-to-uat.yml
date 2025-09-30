@@ -141,4 +141,3 @@ jobs:
       destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
-    environment: uat

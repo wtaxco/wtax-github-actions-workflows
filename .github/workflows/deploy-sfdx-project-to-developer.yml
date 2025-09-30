@@ -140,7 +140,6 @@ on:
         required: true
 jobs:
   deploy:
-    environment: developer
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
     with:
       sonar-url: ${{ inputs.sonar-url }}

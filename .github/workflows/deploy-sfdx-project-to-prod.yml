@@ -137,7 +137,6 @@ jobs:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   deploy:
-    environment: production
     needs:
       - send-predeploy-slack-notification
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
