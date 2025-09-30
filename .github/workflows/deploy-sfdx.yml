@@ -353,16 +353,12 @@ on:
           30343939356334643163663735313066306530623466653562396239373938626662383836383162
           34616334316132396464613365376464643139393235356362336665393237643238663463396235
           33343738646537623434303736383066366362623333646532653532393566323032
-    secrets:
-      ansible-vault-password:
-        required: true
 
 jobs:
   # --- Developer Deployment ---
   deploy-dev:
     runs-on: ubuntu-latest
     environment: developer
-    secrets: inherit
     steps:
       - name: Deploy to Developer
         uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
@@ -381,7 +377,6 @@ jobs:
     needs: deploy-dev
     runs-on: ubuntu-latest
     environment: uat
-    secrets: inherit
     steps:
       - name: Deploy to UAT
         uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
@@ -400,7 +395,6 @@ jobs:
     needs: deploy-uat
     runs-on: ubuntu-latest
     environment: prod
-    secrets: inherit
     steps:
       - name: Deploy to Production
         uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
