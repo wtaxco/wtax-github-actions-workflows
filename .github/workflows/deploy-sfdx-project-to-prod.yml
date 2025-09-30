@@ -143,6 +143,7 @@ jobs:
       jwt-key-encrypted: ${{ inputs.jwt-key-encrypted }}
       run-tests: ${{ inputs.run-tests }}
       destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
+      environment: production
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
