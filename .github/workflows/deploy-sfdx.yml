@@ -362,6 +362,7 @@ jobs:
   deploy-dev:
     runs-on: ubuntu-latest
     environment: developer
+    secrets: inherit
     steps:
       - name: Deploy to Developer
         uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
@@ -374,14 +375,13 @@ jobs:
           jwt-key-encrypted: ${{ inputs.dev-jwt-key-encrypted }}
           run-tests: false
           destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-        secrets:
-          ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   # --- UAT Deployment ---
   deploy-uat:
     needs: deploy-dev
     runs-on: ubuntu-latest
     environment: uat
+    secrets: inherit
     steps:
       - name: Deploy to UAT
         uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
@@ -394,14 +394,13 @@ jobs:
           jwt-key-encrypted: ${{ inputs.uat-jwt-key-encrypted }}
           run-tests: true
           destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-        secrets:
-          ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   # --- Production Deployment ---
   deploy-prod:
     needs: deploy-uat
     runs-on: ubuntu-latest
     environment: prod
+    secrets: inherit
     steps:
       - name: Deploy to Production
         uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
@@ -414,5 +413,3 @@ jobs:
           jwt-key-encrypted: ${{ inputs.prod-jwt-key-encrypted }}
           run-tests: true
           destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-        secrets:
-          ansible-vault-password: ${{ secrets.ansible-vault-password }}
