@@ -140,6 +140,7 @@ on:
         required: true
 jobs:
   deploy:
+    environment: developer
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
     with:
       sonar-url: ${{ inputs.sonar-url }}
@@ -152,5 +153,3 @@ jobs:
       destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
-    environment: developer
-
