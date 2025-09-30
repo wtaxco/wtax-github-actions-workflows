@@ -360,53 +360,59 @@ on:
 jobs:
   # --- Developer Deployment ---
   deploy-dev:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
-    with:
-      sonar-url: ${{ inputs.sonar-url }}
-      sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
-      instance-url: ${{ inputs.dev-instance-url }}
-      client-id: ${{ inputs.dev-client-id }}
-      username: ${{ inputs.dev-username }}
-      jwt-key-encrypted: ${{ inputs.dev-jwt-key-encrypted }}
-      run-tests: false
-      destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-    secrets:
-      ansible-vault-password: ${{ secrets.ansible-vault-password }}
-    environment:
-      name: developer
+    runs-on: ubuntu-latest
+    environment: developer
+    steps:
+      - name: Deploy to Developer
+        uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
+        with:
+          sonar-url: ${{ inputs.sonar-url }}
+          sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
+          instance-url: ${{ inputs.dev-instance-url }}
+          client-id: ${{ inputs.dev-client-id }}
+          username: ${{ inputs.dev-username }}
+          jwt-key-encrypted: ${{ inputs.dev-jwt-key-encrypted }}
+          run-tests: false
+          destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
+        secrets:
+          ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   # --- UAT Deployment ---
   deploy-uat:
     needs: deploy-dev
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
-    with:
-      sonar-url: ${{ inputs.sonar-url }}
-      sonar-quality-gate: false
-      instance-url: ${{ inputs.uat-instance-url }}
-      client-id: ${{ inputs.uat-client-id }}
-      username: ${{ inputs.uat-username }}
-      jwt-key-encrypted: ${{ inputs.uat-jwt-key-encrypted }}
-      run-tests: true
-      destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-    secrets:
-      ansible-vault-password: ${{ secrets.ansible-vault-password }}
-    environment:
-      name: uat
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - name: Deploy to UAT
+        uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
+        with:
+          sonar-url: ${{ inputs.sonar-url }}
+          sonar-quality-gate: false
+          instance-url: ${{ inputs.uat-instance-url }}
+          client-id: ${{ inputs.uat-client-id }}
+          username: ${{ inputs.uat-username }}
+          jwt-key-encrypted: ${{ inputs.uat-jwt-key-encrypted }}
+          run-tests: true
+          destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
+        secrets:
+          ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   # --- Production Deployment ---
   deploy-prod:
     needs: deploy-uat
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
-    with:
-      sonar-url: ${{ inputs.sonar-url }}
-      sonar-quality-gate: true
-      instance-url: ${{ inputs.prod-instance-url }}
-      client-id: ${{ inputs.prod-client-id }}
-      username: ${{ inputs.prod-username }}
-      jwt-key-encrypted: ${{ inputs.prod-jwt-key-encrypted }}
-      run-tests: true
-      destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-    secrets:
-      ansible-vault-password: ${{ secrets.ansible-vault-password }}
-    environment:
-      name: prod
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Deploy to Production
+        uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761
+        with:
+          sonar-url: ${{ inputs.sonar-url }}
+          sonar-quality-gate: true
+          instance-url: ${{ inputs.prod-instance-url }}
+          client-id: ${{ inputs.prod-client-id }}
+          username: ${{ inputs.prod-username }}
+          jwt-key-encrypted: ${{ inputs.prod-jwt-key-encrypted }}
+          run-tests: true
+          destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
+        secrets:
+          ansible-vault-password: ${{ secrets.ansible-vault-password }}
