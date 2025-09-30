@@ -8,30 +8,6 @@ on:
 
 jobs:
   # ---------------------------
-  # Build & validate on PR
-  # ---------------------------
-  build:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Install Salesforce CLI
-        run: npm install -g @salesforce/cli
-
-      - name: Validate SFDX project
-        run: |
-          echo "Running build & validation steps (no deployment)"
-          sf project validate --source-dir force-app || true
-
-      - name: Run Unit Tests
-        run: |
-          echo "Run unit tests in scratch org or CI org here"
-          # sf project deploy validate ...
-          # sf apex run test ...
-
-  # ---------------------------
   # Deploy to Developer (push only)
   # ---------------------------
   deploy-developer:
