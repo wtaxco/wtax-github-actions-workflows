@@ -1,12 +1,98 @@
-name: Env Approval Test
+name: Salesforce Monolithic Deployment
 
 on:
+  pull_request:
+    branches: [ main ]
   push:
     branches: [ main ]
 
 jobs:
-  test-env:
+  # ---------------------------
+  # Deploy to Developer (push only)
+  # ---------------------------
+  deploy-developer:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    environment: developer
+    environment: developer   # requires approval in repo settings
     steps:
-      - run: echo "Hello Developer"
+      - uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Auth to Developer org
+        run: |
+          sf auth jwt grant \
+            --client-id "${{ secrets.SF_CLIENT_ID }}" \
+            --jwt-key-file <(echo "${{ secrets.SF_JWT_KEY }}") \
+            --instance-url "${{ secrets.SF_INSTANCE_URL }}" \
+            --username "${{ secrets.SF_USERNAME }}" \
+            --set-default
+
+      - name: Deploy metadata to Developer
+        run: |
+          sf project deploy start \
+            --metadata-dir force-app \
+            --target-org "${{ secrets.SF_USERNAME }}" \
+            --test-level RunLocalTests \
+            --wait 60
+
+  # ---------------------------
+  # Deploy to UAT
+  # ---------------------------
+  deploy-uat:
+    needs: deploy-developer
+    runs-on: ubuntu-latest
+    environment: uat   # requires approval
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Auth to UAT org
+        run: |
+          sf auth jwt grant \
+            --client-id "${{ secrets.SF_CLIENT_ID }}" \
+            --jwt-key-file <(echo "${{ secrets.SF_JWT_KEY }}") \
+            --instance-url "${{ secrets.SF_INSTANCE_URL }}" \
+            --username "${{ secrets.SF_USERNAME }}" \
+            --set-default
+
+      - name: Deploy metadata to UAT
+        run: |
+          sf project deploy start \
+            --metadata-dir force-app \
+            --target-org "${{ secrets.SF_USERNAME }}" \
+            --test-level RunLocalTests \
+            --wait 60
+
+  # ---------------------------
+  # Deploy to Production
+  # ---------------------------
+  deploy-prod:
+    needs: deploy-uat
+    runs-on: ubuntu-latest
+    environment: prod   # requires approval
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Auth to PROD org
+        run: |
+          sf auth jwt grant \
+            --client-id "${{ secrets.SF_CLIENT_ID }}" \
+            --jwt-key-file <(echo "${{ secrets.SF_JWT_KEY }}") \
+            --instance-url "${{ secrets.SF_INSTANCE_URL }}" \
+            --username "${{ secrets.SF_USERNAME }}" \
+            --set-default
+
+      - name: Deploy metadata to PROD
+        run: |
+          sf project deploy start \
+            --metadata-dir force-app \
+            --target-org "${{ secrets.SF_USERNAME }}" \
+            --test-level RunAllTestsInOrg \
+            --wait 120
