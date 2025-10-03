@@ -141,7 +141,7 @@ on:
         required: true
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761-Main
     with:
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
