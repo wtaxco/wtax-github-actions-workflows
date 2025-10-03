@@ -239,5 +239,3 @@ jobs:
         needs.find-previous-build.outputs.has-artifact == 'true' ||
         needs.build.result == 'success'
       )
-    steps:
-      echo "Artifact name: ${{ github.event.repository.name }}-${{ github.sha }}.zip"
