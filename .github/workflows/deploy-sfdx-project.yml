@@ -239,3 +239,13 @@ jobs:
         needs.find-previous-build.outputs.has-artifact == 'true' ||
         needs.build.result == 'success'
       )
+    steps:
+      name: Show artifact source
+      run: |
+        if [ "${{ needs.find-previous-build.outputs.has-artifact }}" = "true" ]; then
+          echo "✅ Using artifacts from *find-previous-build* (restored)"
+        elif [ "${{ needs.build.result }}" = "success" ]; then
+          echo "✅ Using artifacts from *build* (freshly built)"
+        else
+          echo "❌ No artifacts available"
+        fi
