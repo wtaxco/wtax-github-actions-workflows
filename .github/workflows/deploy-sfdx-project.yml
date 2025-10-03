@@ -83,11 +83,27 @@ jobs:
       has-artifact: ${{ steps.check.outputs.found }}
     steps:
       - name: try download metadata ZIP file
-        id: download
+        id: download-metadata
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
+          path: target
+
+      - name: try download test classes text file
+        id: download-tests
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
+          path: target
+
+      - name: try download deletes file
+        id: download-deletes
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.txt"
           path: target
 
       - name: set output
@@ -154,8 +170,8 @@ jobs:
       - name: archive deletes.csv
         uses: actions/upload-artifact@v4
         with:
-          name: deletes.csv
-          path: target/deletes.csv
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
+          path: target/${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv
 
       - name: remove components marked as deleted from metadata
         run: |
@@ -202,8 +218,8 @@ jobs:
       - name: archive test-classes.txt
         uses: actions/upload-artifact@v4
         with:
-          name: test-classes.txt
-          path: target/test-classes.txt
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
+          path: target/${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt
 
       - name: archive metadata directory
         uses: actions/upload-artifact@v4
@@ -220,253 +236,5 @@ jobs:
         needs.find-previous-build.outputs.has-artifact == 'true' ||
         needs.build.result == 'success'
       )
-    runs-on: ubuntu-latest
     steps:
-      - name: check out code
-        uses: actions/checkout@v4
-
-      - name: install jq
-        run: sudo apt-get install -y jq
-
-      - name: set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18.x
-
-      - name: install Salesforce CLI
-        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
-
-      - name: create unsigned plugin allowlist
-        run: |
-          mkdir -p $HOME/.config/sf
-          echo '[ "@dxatscale/sfpowerscripts", "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
-
-      - name: write Ansible Vault password to file
-        run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
-
-      - name: write encrypted JWT key to file
-        run: echo '${{ inputs.jwt-key-encrypted }}' >.jwt-key
-
-      - name: decrypt the private key for the Continuous Integration connected app
-        run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
-
-      - name: connect to org
-        run: |
-          sf auth jwt grant \
-              --client-id="${{ inputs.client-id }}" \
-              --jwt-key-file=.jwt-key \
-              --instance-url=${{ inputs.instance-url }} \
-              --username=${{ inputs.username }} \
-              --set-default
-
-      - name: download metadata ZIP file
-        uses: actions/download-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
-          path: "target/${{ github.event.repository.name }}"
-
-      - name: download deleted metadata CSV file
-        uses: actions/download-artifact@v4
-        with:
-          name: deletes.csv
-          path: target
-
-      - name: do destructive changes before deployment
-        run: |
-          echo destructiveChangeManifestFile=destructiveChangesPre.xml >>$GITHUB_ENV
-          echo destructiveChangeType=pre >>$GITHUB_ENV
-        if: ${{ !inputs.destructive-changes-after-deployment }}
-
-      - name: do destructive changes after deployment
-        run: |
-          echo destructiveChangeManifestFile=destructiveChangesPost.xml >>$GITHUB_ENV
-          echo destructiveChangeType=post >>$GITHUB_ENV
-        if: inputs.destructive-changes-after-deployment
-
-      - name: create destructive change manifest for components marked for deletion
-        run: |
-          echo "Creating destructive change manifest for components marked for deletion"
-
-          # Set some variables
-          target_org="${{ inputs.username }}"
-
-          # Get list of components on org
-          echo "- Getting list of components on org"
-          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexClass' --json | jq -r '.result.records[].Name' > target/org-apex-classes.txt
-          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json | jq -r '.result.records[].Name' > target/org-apex-triggers.txt
-          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexPage' --json | jq -r '.result.records[].Name' > target/org-apex-pages.txt
-          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
-          sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
-          sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
-          sf data query -o ${target_org} -q 'SELECT DeveloperName FROM FlowDefinition' --usetoolingapi --json | jq -r '.result.records[].DeveloperName' > target/org-flows.txt
-
-          # Move components that still exist on org to delete/source
-          echo - Filtering components that still exist on org
-          >target/scheduled-for-destruction.txt
-          >target/already-destroyed.txt
-          >target/cannot-destroy.txt
-          awk -F, '{print "type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
-            eval $line
-            if [ "$type" == "ApexClass" ]; then
-              if grep "^${fullName}\$" target/org-apex-classes.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            elif [ "$type" == "ApexTrigger" ]; then
-              if grep "^${fullName}\$" target/org-apex-triggers.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            elif [ "$type" == "ApexPage" ]; then
-              if grep "^${fullName}\$" target/org-apex-pages.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            elif [ "$type" == "ApexComponent" ]; then
-              if grep "^${fullName}\$" target/org-apex-components.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            elif [ "$type" == "Network" ]; then
-              if grep "^${fullName}\$" target/org-networks.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            elif [ "$type" == "Site" ]; then
-              if grep "^${fullName}\$" target/org-sites.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            elif [ "$type" == "Flow" ]; then
-              if grep "^${fullName}\$" target/org-flows.txt; then
-                echo "    Scheduling ${type}:${fullName} for destruction"
-                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-              else
-                echo "${type}:${fullName}" >>target/already-destroyed.txt
-              fi
-            else
-              echo "${type}:${fullName}" >>target/cannot-destroy.txt
-              echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
-            fi
-          done
-          
-          scheduled_for_destruction=$(wc -l <target/scheduled-for-destruction.txt)
-          already_destroyed=$(wc -l <target/already-destroyed.txt)
-          cannot_destroy=$(wc -l <target/cannot-destroy.txt)
-          echo "${scheduled_for_destruction} component(s) to be deleted from org, ${already_destroyed} already deleted (cannot delete ${cannot_destroy})."
-          if [ ${scheduled_for_destruction} -gt 0 ]; then
-            echo "- Generating destructive change manifest..."
-            metadata_args=$(cat target/scheduled-for-destruction.txt|while read line; do echo -n "--metadata ${line} "; done)
-            sf project generate manifest ${metadata_args} --type ${destructiveChangeType} --output-dir=target/${{ github.event.repository.name }}
-            echo "Ok! Added ${scheduled_for_destruction} destructive changes to target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}."
-          else
-            echo "No destructive changes to add."
-            cat <<EOF >target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}
-          <?xml version="1.0" encoding="UTF-8"?>
-          <Package xmlns="http://soap.sforce.com/2006/04/metadata" />
-          EOF
-          fi
-          echo
-
-      - name: download test classes file
-        uses: actions/download-artifact@v4
-        with:
-          name: test-classes.txt
-          path: target
-
-      - name: deploy to org and run Apex tests
-        run: |
-          timeout=180
-          testflags=$(cat target/test-classes.txt | while read testClass; do
-            echo -n "--tests=${testClass} "
-          done)
-          echo "Deploying to ${{ inputs.username }} and running unit tests... (timeout ${timeout} minutes)"
-          sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}" --wait=${timeout}
-
-      - name: install apex-code-coverage-transformer plugin
-        run: sf plugins install apex-code-coverage-transformer@1.7.6
-        if: inputs.sonar-url != ''
-
-      - name: convert test coverage report to Sonarqube format
-        run: sf apex-code-coverage transformer transform -j reports/coverage/coverage.json -x reports/coverage/coverage.xml
-        if: inputs.sonar-url != ''
-
-      - name: write encrypted Docker registry password to file
-        run: echo '${{ inputs.docker-password-encrypted }}' >.docker-password
-        if: inputs.sonar-url != ''
-
-      - name: decrypt the Docker registry password
-        run: |
-          ansible-vault decrypt --vault-password-file=.vault-password .docker-password >>$GITHUB_ENV
-        if: inputs.sonar-url != ''
-
-      - name: log in to the docker.wtax.co Docker registry
-        run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co <.docker-password
-        if: inputs.sonar-url != ''
-
-      - name: retrieve Apex ruleset
-        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/testing/assets/pmd/apex-ruleset.xml
-        if: inputs.sonar-url != ''
-
-      - name: run PMD static code analysis for Apex code
-        run: >
-            docker run 
-            --rm 
-            -v .:/usr/src 
-            docker.wtax.co/wtax/pmd:7.1.0 
-            check 
-            --rulesets=/usr/src/apex-ruleset.xml 
-            --dir=/usr/src 
-            --report-file=/usr/src/reports/pmd.xml 
-            --format=xml
-            --no-fail-on-violation
-        if: inputs.sonar-url != ''
-
-      - name: write encrypted sonar token to file
-        run: echo '${{ inputs.sonar-login-encrypted }}' >.sonar-login
-        if: inputs.sonar-url != ''
-
-      - name: tell GitHub Actions to mask the sonar token in the log
-        run: echo "::add-mask::$(ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login)"
-        if: inputs.sonar-url != ''
-
-      - name: decrypt the sonar token
-        run: |
-          echo -n "sonar_login_decrypted=">$GITHUB_ENV
-          ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login >>$GITHUB_ENV
-        if: inputs.sonar-url != ''
-
-      - name: send test coverage results to Sonar
-        run: >
-            docker run --rm 
-            -e SONAR_HOST_URL="${{ inputs.sonar-url }}" 
-            -e SONAR_LOGIN="${sonar_login_decrypted}" 
-            -v ".:/usr/src" 
-            sonarsource/sonar-scanner-cli:5 
-            -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} 
-            -Dsonar.javascript.file.suffixes=.cls 
-            -Dsonar.sources=${{ inputs.source-directory }}/main 
-            -Dsonar.tests=${{ inputs.source-directory }}/test 
-            -Dsonar.coverageReportPaths=reports/coverage/coverage.xml 
-            -Dsonar.java.pmd.reportPaths=reports/pmd.xml
-            -Dsonar.qualitygate.wait=${{ inputs.sonar-quality-gate == true }}
-        if: inputs.sonar-url != ''
-
-      - name: archive target directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: target
-          path: target
-        if: always()
+      echo "Artifact name: ${{ github.event.repository.name }}-${{ github.sha }}.zip"
