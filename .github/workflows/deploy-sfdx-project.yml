@@ -76,6 +76,7 @@ on:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
         required: true
+
 jobs:
   find-previous-build:
     runs-on: ubuntu-latest
@@ -88,7 +89,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
-          path: target
+          path: target/metadata
 
       - name: try download test classes text file
         id: download-tests
@@ -96,22 +97,22 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
-          path: target
+          path: target/test-classes
 
       - name: try download deletes file
         id: download-deletes
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.txt"
-          path: target
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
+          path: target/deletes
 
       - name: set output
         id: check
         run: |
-          if [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}/package.xml" ] \
-             && [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" ] \
-             && [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}-deletes.txt" ]; then
+          if [ -f "target/metadata/package.xml" ] \
+             && [ -s target/test-classes/* ] \
+             && [ -s target/deletes/* ]; then
             echo "found=true" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
@@ -141,30 +142,21 @@ jobs:
           mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
           sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
 
-      - name: determine which components are marked for deletion (have a "//DELETE" line)
+      - name: determine which components are marked for deletion
         run: |
           metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
           grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
             filename=`basename "$line"`
             ext=${filename##*.}
-            component=`basename "$filename" .$ext`  # Strip off the extension and assume the base file name is the component's full name
-            if [ "${ext}" == "cls" ]; then  # Apex classes
-              type=ApexClass
-            elif [ "${ext}" == "trigger" ]; then  # Apex triggers
-              type=ApexTrigger
-            elif [ "${ext}" == "page" ]; then  # Visualforce pages
-              type=ApexPage
-            elif [ "${ext}" == "component" ]; then  # Visualforce components
-              type=ApexComponent
-            elif [ "${ext}" == "network" ]; then  # Network (digital experience)
-              type=Network
-            elif [ "${ext}" == "site" ]; then  # Site
-              type=Site
-            elif [ "${ext}" == "flow" ]; then  # Flow
-              type=Flow
-            else
-              type=Unknown
-            fi
+            component=`basename "$filename" .$ext`
+            if [ "${ext}" == "cls" ]; then type=ApexClass
+            elif [ "${ext}" == "trigger" ]; then type=ApexTrigger
+            elif [ "${ext}" == "page" ]; then type=ApexPage
+            elif [ "${ext}" == "component" ]; then type=ApexComponent
+            elif [ "${ext}" == "network" ]; then type=Network
+            elif [ "${ext}" == "site" ]; then type=Site
+            elif [ "${ext}" == "flow" ]; then type=Flow
+            else type=Unknown; fi
             echo "${line},${type},${component}"
           done > target/deletes.csv
           echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
@@ -173,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
-          path: target/${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv
+          path: target/deletes.csv
 
       - name: remove components marked as deleted from metadata
         run: |
@@ -221,7 +213,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
-          path: target/${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt
+          path: target/test-classes.txt
 
       - name: archive metadata directory
         uses: actions/upload-artifact@v4
@@ -249,3 +241,6 @@ jobs:
           else
             echo "❌ No artifacts available"
           fi
+
+      - name: List artifacts
+        run: ls -R target || true
