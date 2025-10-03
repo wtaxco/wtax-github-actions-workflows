@@ -70,9 +70,8 @@ on:
         default: true
       environment:
         type: string
-        description: Name of the environment for approval
+        description: Name of the environment to deploy to used for reviews
         required: false
-        default: development
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
