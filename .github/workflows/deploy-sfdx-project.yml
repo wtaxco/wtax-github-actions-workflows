@@ -109,7 +109,9 @@ jobs:
       - name: set output
         id: check
         run: |
-          if [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}/package.xml" ]; then
+          if [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}/package.xml" ] \
+             && [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" ] \
+             && [ -f "target/${{ github.event.repository.name }}-${{ github.sha }}-deletes.txt" ]; then
             echo "found=true" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
