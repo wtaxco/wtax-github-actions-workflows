@@ -223,6 +223,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     needs:
       - find-previous-build
       - build
