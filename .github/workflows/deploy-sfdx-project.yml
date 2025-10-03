@@ -111,8 +111,8 @@ jobs:
         id: check
         run: |
           if [ -f "target/metadata/package.xml" ] \
-             && [ -s target/test-classes/* ] \
-             && [ -s target/deletes/* ]; then
+             && [ -f target/test-classes/test-classes.txt ] \
+             && [ -f target/deletes/deletes.csv ]; then
             echo "found=true" >> $GITHUB_OUTPUT
           else
             echo "found=false" >> $GITHUB_OUTPUT
