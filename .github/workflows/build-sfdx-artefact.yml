@@ -3,17 +3,20 @@ name: Build Salesforce Metadata
 on:
   workflow_call:
     outputs:
-      metadata-zip-file: ${{ steps.set-outputs.outputs.metadata-zip-file }}
-      test-classes-file: ${{ steps.set-outputs.outputs.test-classes-file }}
-      deletes-file: ${{ steps.set-outputs.outputs.deletes-file }}
+      metadata-zip-file:
+        value: ${{ jobs.build.outputs.metadata-zip-file }}
+      test-classes-file:
+        value: ${{ jobs.build.outputs.test-classes-file }}
+      deletes-file:
+        value: ${{ jobs.build.outputs.deletes-file }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      metadata-zip-file: ${{ steps.archive-metadata.outputs.artifact-name }}
-      test-classes-file: ${{ steps.archive-tests.outputs.artifact-name }}
-      deletes-file: ${{ steps.archive-deletes.outputs.artifact-name }}
+      metadata-zip-file: ${{ steps.set-outputs.outputs.metadata-zip-file }}
+      test-classes-file: ${{ steps.set-outputs.outputs.test-classes-file }}
+      deletes-file: ${{ steps.set-outputs.outputs.deletes-file }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
