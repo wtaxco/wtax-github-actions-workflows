@@ -95,7 +95,9 @@ jobs:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@IN-761-Main
 
   deploy:
+    needs: build
     runs-on: ubuntu-latest
+    always: true
     if: ${{ inputs.metadata-zip-file != '' || needs.build.result == 'success' }}
     steps:
       - name: check out code
