@@ -145,8 +145,6 @@ on:
 jobs:
 
   deploy:
-    needs:
-      - send-predeploy-slack-notification
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761-Main
     with:
       instance-url: ${{ inputs.instance-url }}
