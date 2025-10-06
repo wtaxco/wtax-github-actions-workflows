@@ -143,8 +143,14 @@ on:
         required: true
 
 jobs:
+  send-predeploy-slack-notification:
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@main
+    secrets:
+      ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   deploy:
+    needs:
+      - send-predeploy-slack-notification
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761-Main
     with:
       instance-url: ${{ inputs.instance-url }}
