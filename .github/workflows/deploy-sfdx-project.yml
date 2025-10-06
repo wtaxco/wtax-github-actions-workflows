@@ -92,7 +92,7 @@ on:
 jobs:
   build:
     if: inputs.metadata-zip-file == ''
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@IN-761
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@IN-761-Main
 
   deploy:
     runs-on: ubuntu-latest
