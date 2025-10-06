@@ -90,6 +90,15 @@ on:
         required: true
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug info
+        run: |
+          echo "Metadata zip file: '${{ inputs.metadata-zip-file }}'"
+          echo "Test classes file: '${{ inputs.test-classes-file }}'"
+          echo "Deletes file: '${{ inputs.deletes-file }}'"
+
   build:
     if: inputs.metadata-zip-file == ''
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@IN-761-Main
