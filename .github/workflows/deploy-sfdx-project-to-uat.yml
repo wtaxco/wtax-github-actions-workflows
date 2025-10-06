@@ -1,16 +1,6 @@
 on:
   workflow_call:
     inputs:
-      sonar-url:
-        type: string
-        description: URL of the Sonar server to use for analyzing the code. If omitted, the WTax Sonar server at sonar.wtax.co will be used. The `sonar-login` secret should hold a valid access token or username:password combination for this server.
-        required: false
-        default: https://sonar.wtax.co
-      sonar-quality-gate:
-        type: boolean
-        description: Whether to poll the SonarQube instance until the quality gate status is available and fail the build if the quality gate fails.
-        required: false
-        default: false
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -155,8 +145,6 @@ jobs:
   deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761-Main
     with:
-      sonar-url: ${{ inputs.sonar-url }}
-      sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
       username: ${{ inputs.username }}

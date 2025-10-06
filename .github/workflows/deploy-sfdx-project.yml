@@ -373,6 +373,6 @@ jobs:
       - name: archive target directory
         uses: actions/upload-artifact@v4
         with:
-          name: target-${{inputs.environment}}-${{ github.event.repository.name }}-${{ github.sha }}
+          name: target
           path: target
         if: always()
