@@ -3,15 +3,9 @@ name: Build Salesforce Metadata
 on:
   workflow_call:
     outputs:
-      metadata-zip-file:
-        description: Metadata zip file produced (artifact name)
-        value: ${{ jobs.build.outputs.metadata-zip-file }}
-      test-classes-file:
-        description: File with test class names (artifact name)
-        value: ${{ jobs.build.outputs.test-classes-file }}
-      deletes-file:
-        description: File with components marked for deletion (artifact name)
-        value: ${{ jobs.build.outputs.deletes-file }}
+      metadata-zip-file: ${{ steps.set-outputs.outputs.metadata-zip-file }}
+      test-classes-file: ${{ steps.set-outputs.outputs.test-classes-file }}
+      deletes-file: ${{ steps.set-outputs.outputs.deletes-file }}
 
 jobs:
   build:
@@ -117,8 +111,9 @@ jobs:
           name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
           path: target/${{ github.event.repository.name }}-${{ github.sha }}
 
-      - name: debug
+      - name: Set output values
+        id: set-outputs
         run: |
-          echo "Metadata zip file: '${{ steps.archive-metadata.outputs.artifact-name }}'"
-          echo "Test classes file: '${{ steps.archive-tests.outputs.artifact-name }}'"
-          echo "Deletes file: '${{ steps.archive-deletes.outputs.artifact-name }}'"
+          echo "metadata-zip-file=${{ github.event.repository.name }}-${{ github.sha }}.zip" >> $GITHUB_OUTPUT
+          echo "test-classes-file=${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" >> $GITHUB_OUTPUT
+          echo "deletes-file=${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv" >> $GITHUB_OUTPUT
