@@ -116,3 +116,9 @@ jobs:
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
           path: target/${{ github.event.repository.name }}-${{ github.sha }}
+
+      - name: debug
+        run: |
+          echo "Metadata zip file: '${{ steps.archive-metadata.outputs.artifact-name }}'"
+          echo "Test classes file: '${{ steps.archive-tests.outputs.artifact-name }}'"
+          echo "Deletes file: '${{ steps.archive-deletes.outputs.artifact-name }}'"
