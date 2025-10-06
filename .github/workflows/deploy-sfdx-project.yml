@@ -96,11 +96,8 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    if: |
-      always() && (
-        needs.find-previous-build.outputs.has-artifact == 'true' ||
-        needs.build.result == 'success'
-      )
+    needs: [ build ]
+    if: ${{ always() && inputs.metadata-zip-file != '' }}
     steps:
       - name: check out code
         uses: actions/checkout@v4
