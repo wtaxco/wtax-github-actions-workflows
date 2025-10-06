@@ -133,19 +133,19 @@ on:
         default: true
       environment:
         type: string
-        description: Name of the environment to deploy to used for reviews
+        description: The name of the environment in the repository that determines who is authorized to approve deployments to this environment.
         required: false
       metadata-zip-file:
         type: string
-        description: supply all 3
+        description: This input is not required, but if set it is required that both `test-classes-file` and `deletes-file` are also set.
         required: false
       test-classes-file:
         type: string
-        description: supply all 3
+        description: This input is not required, but if set it is required that both `metadata-zip-file` and `deletes-file` are also set.
         required: false
       deletes-file:
         type: string
-        description: supply all 3
+        description: This input is not required, but if set it is required that both `metadata-zip-file` and `test-classes-file` are also set.
         required: false
     secrets:
       ansible-vault-password:

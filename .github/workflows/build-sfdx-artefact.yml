@@ -4,10 +4,13 @@ on:
   workflow_call:
     outputs:
       metadata-zip-file:
+        description: 'The zip file containing the Salesforce metadata'
         value: ${{ jobs.build.outputs.metadata-zip-file }}
       test-classes-file:
+        description: 'The text file containing the list of test classes to run'
         value: ${{ jobs.build.outputs.test-classes-file }}
       deletes-file:
+        description: 'The CSV file containing the list of components marked for deletion'
         value: ${{ jobs.build.outputs.deletes-file }}
 
 jobs:
