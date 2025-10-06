@@ -95,7 +95,7 @@ jobs:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@IN-761-Main
 
   deploy:
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment != '' && inputs.environment || null }}
     runs-on: ubuntu-latest
     if: ${{ inputs.metadata-zip-file != '' || needs.build.result == 'success' }}
     steps:
