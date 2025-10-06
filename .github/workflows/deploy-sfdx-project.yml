@@ -97,7 +97,9 @@ jobs:
   deploy:
     needs: [build]
     runs-on: ubuntu-latest
-    if: ${{ inputs.metadata-zip-file != '' || needs.build.result == 'success' || needs.build.result == 'skipped' }}
+    # Temporary: always() is used for backward compatibility with legacy build+deploy workflows.
+    # Remove once the unified single-deployment pipeline is in place.
+    if: ${{ always() && (inputs.metadata-zip-file != '' || needs.build.result == 'success') }}
     steps:
       - name: check out code
         uses: actions/checkout@v4
