@@ -96,9 +96,6 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs:
-      - find-previous-build
-      - build
     if: |
       always() && (
         needs.find-previous-build.outputs.has-artifact == 'true' ||
