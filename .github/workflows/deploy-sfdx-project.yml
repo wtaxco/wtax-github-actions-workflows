@@ -97,7 +97,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    always: true
     if: ${{ inputs.metadata-zip-file != '' || needs.build.result == 'success' }}
     steps:
       - name: check out code
