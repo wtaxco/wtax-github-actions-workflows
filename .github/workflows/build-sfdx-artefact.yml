@@ -1,0 +1,125 @@
+name: Build Salesforce Metadata
+
+on:
+  workflow_call:
+    outputs:
+      metadata-zip-file:
+        description: 'The zip file containing the Salesforce metadata'
+        value: ${{ jobs.build.outputs.metadata-zip-file }}
+      test-classes-file:
+        description: 'The text file containing the list of test classes to run'
+        value: ${{ jobs.build.outputs.test-classes-file }}
+      deletes-file:
+        description: 'The CSV file containing the list of components marked for deletion'
+        value: ${{ jobs.build.outputs.deletes-file }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      metadata-zip-file: ${{ steps.set-outputs.outputs.metadata-zip-file }}
+      test-classes-file: ${{ steps.set-outputs.outputs.test-classes-file }}
+      deletes-file: ${{ steps.set-outputs.outputs.deletes-file }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+
+      - name: Install Salesforce CLI (sfdx)
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
+
+      - name: Package the source as metadata
+        run: |
+          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
+          sf project convert source \
+            --source-dir force-app \
+            --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
+
+      - name: Determine which components are marked for deletion
+        run: |
+          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
+          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
+            filename=`basename "$line"`
+            ext=${filename##*.}
+            component=`basename "$filename" .$ext`
+            if [ "${ext}" == "cls" ]; then type=ApexClass
+            elif [ "${ext}" == "trigger" ]; then type=ApexTrigger
+            elif [ "${ext}" == "page" ]; then type=ApexPage
+            elif [ "${ext}" == "component" ]; then type=ApexComponent
+            elif [ "${ext}" == "network" ]; then type=Network
+            elif [ "${ext}" == "site" ]; then type=Site
+            elif [ "${ext}" == "flow" ]; then type=Flow
+            else type=Unknown; fi
+            echo "${line},${type},${component}"
+          done > target/deletes.csv
+          echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
+
+      - name: Archive deletes.csv
+        id: archive-deletes
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
+          path: target/deletes.csv
+
+      - name: Remove components marked as deleted from metadata
+        run: |
+          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
+          >target/deletes-apexClasses.txt
+          echo "Removing components marked as deleted from metadata directory..."
+
+          awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
+            eval $line
+            rm $path
+            if [ "$type" != "Flow" ]; then
+                rm $path-meta.xml
+            fi
+            sed -i.bak "/<members>${fullName}<\\/members>/d" ${metadata_directory}/package.xml
+
+            if [ "$type" == "ApexClass" ]; then
+              echo "${fullName}" >> target/deletes-apexClasses.txt
+            fi
+          done
+
+          rm -f ${metadata_directory}/package.xml.bak
+          echo "`wc -l <target/deletes.csv` components removed from metadata directory."
+
+      - name: Find unit test classes in project
+        run: |
+          echo "Finding unit tests in project..."
+          if [ -d "force-app/test" ]; then
+            find force-app/test -name '*.cls' | while read test; do
+              testClass="$(basename "${test}" .cls)"
+              grep "${testClass}" target/deletes-apexClasses.txt >/dev/null || echo "${testClass}" >>target/test-classes.txt
+            done
+          else
+            echo "No force-app/test directory found. Skipping task."
+            touch target/test-classes.txt
+          fi
+
+      - name: Archive test-classes.txt
+        id: archive-tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
+          path: target/test-classes.txt
+
+      - name: Archive metadata directory
+        id: archive-metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
+          path: target/${{ github.event.repository.name }}-${{ github.sha }}
+
+      - name: Set output values
+        id: set-outputs
+        run: |
+          echo "metadata-zip-file=${{ github.event.repository.name }}-${{ github.sha }}.zip" >> $GITHUB_OUTPUT
+          echo "test-classes-file=${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" >> $GITHUB_OUTPUT
+          echo "deletes-file=${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv" >> $GITHUB_OUTPUT
