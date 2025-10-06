@@ -155,6 +155,8 @@ jobs:
   deploy:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@IN-761-Main
     with:
+      sonar-url: ${{ inputs.sonar-url }}
+      sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
       username: ${{ inputs.username }}
