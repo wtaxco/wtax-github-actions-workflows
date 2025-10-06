@@ -72,154 +72,27 @@ on:
         type: string
         description: Name of the environment to deploy to used for reviews
         required: false
+      metadata-zip-file:
+        type: string
+        description: supply all 3
+        required: false
+      test-classes-file:
+        type: string
+        description: supply all 3
+        required: false
+      deletes-file:
+        type: string
+        description: supply all 3
+        required: false
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `jwt-key-encrypted`.
         required: true
 
 jobs:
-  find-previous-build:
-    runs-on: ubuntu-latest
-    outputs:
-      has-artifact: ${{ steps.check.outputs.found }}
-    steps:
-      - name: try download metadata ZIP file
-        id: download-metadata
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
-          path: target/metadata
-
-      - name: try download test classes text file
-        id: download-tests
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
-          path: target/test-classes
-
-      - name: try download deletes file
-        id: download-deletes
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
-          path: target/deletes
-
-      - name: set output
-        id: check
-        run: |
-          if [ -f "target/metadata/package.xml" ] \
-             && [ -f target/test-classes/test-classes.txt ] \
-             && [ -f target/deletes/deletes.csv ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-          fi
-
   build:
-    runs-on: ubuntu-latest
-    needs: find-previous-build
-    if: needs.find-previous-build.outputs.has-artifact == 'false'
-    steps:
-      - name: check out code
-        uses: actions/checkout@v4
-
-      - name: install jq
-        run: sudo apt-get install -y jq
-
-      - name: set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18.x
-
-      - name: install Salesforce CLI (sfdx)
-        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
-
-      - name: package the source as metadata
-        run: |
-          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
-          sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
-
-      - name: determine which components are marked for deletion
-        run: |
-          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
-            filename=`basename "$line"`
-            ext=${filename##*.}
-            component=`basename "$filename" .$ext`
-            if [ "${ext}" == "cls" ]; then type=ApexClass
-            elif [ "${ext}" == "trigger" ]; then type=ApexTrigger
-            elif [ "${ext}" == "page" ]; then type=ApexPage
-            elif [ "${ext}" == "component" ]; then type=ApexComponent
-            elif [ "${ext}" == "network" ]; then type=Network
-            elif [ "${ext}" == "site" ]; then type=Site
-            elif [ "${ext}" == "flow" ]; then type=Flow
-            else type=Unknown; fi
-            echo "${line},${type},${component}"
-          done > target/deletes.csv
-          echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
-
-      - name: archive deletes.csv
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
-          path: target/deletes.csv
-
-      - name: remove components marked as deleted from metadata
-        run: |
-          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          >target/deletes-apexClasses.txt
-          echo "Removing components marked as deleted from metadata directory..."
-
-          awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
-            eval $line
-            # Remove files
-            rm $path
-            if [ "$type" != "Flow" ]; then
-                rm $path-meta.xml
-            fi
-            # Remove component from package manifest.
-            # NOTE: This doesn't guarantee that the member is being removed (only) from the correct type section. E.g. 
-            #       if there is both an ApexClass and an AuraDefinitionBundle with the same full name and the ApexClass
-            #       was marked as deleted, this would also remove the AuraDefinitionBundle from the package manifest.
-            sed -i.bak "/<members>${fullName}<\\/members>/d" ${metadata_directory}/package.xml
-
-            # While we're looping over the components to be deleted; save just the Apex class names to a separate
-            # file. This will come in handy when determining which Apex tests there are in the project.
-            if [ "$type" == "ApexClass" ]; then
-              echo "${fullName}" >> target/deletes-apexClasses.txt
-            fi
-          done
-
-          rm -f ${metadata_directory}/package.xml.bak
-          echo "`wc -l <target/deletes.csv` components removed from metadata directory."
-
-      - name: find unit test classes in project
-        run: |
-          echo "Finding unit tests in project..."
-          if [ -d "force-app/test" ]; then
-            find force-app/test -name '*.cls' | while read test; do
-              testClass="$(basename "${test}" .cls)"
-              grep "${testClass}" target/deletes-apexClasses.txt >/dev/null || echo "${testClass}" >>target/test-classes.txt
-            done
-          else
-            echo "No force-app/test directory found. Skipping task."
-            touch target/test-classes.txt  # Prevent downstream issues
-          fi
-
-      - name: archive test-classes.txt
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
-          path: target/test-classes.txt
-
-      - name: archive metadata directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
-          path: target/${{ github.event.repository.name }}-${{ github.sha }}
+    if: inputs.metadata-zip-file == ''
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@IN-761
 
   deploy:
     runs-on: ubuntu-latest
@@ -269,23 +142,46 @@ jobs:
             --username=${{ inputs.username }} \
             --set-default
 
-      # 🔽 Always download artifacts (from either build or restore)
-      - name: download metadata ZIP file
+      - name: download metadata ZIP file (from input)
+        if: ${{ inputs.metadata-zip-file != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
+          name: ${{ inputs.metadata-zip-file }}
           path: target/${{ github.event.repository.name }}
 
-      - name: download deleted metadata CSV file
+      - name: download deleted metadata CSV file (from input)
+        if: ${{ inputs.deletes-file != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
+          name: ${{ inputs.deletes-file }}
           path: target
 
-      - name: download test classes file
+      - name: download test classes file (from input)
+        if: ${{ inputs.test-classes-file != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
+          name: ${{ inputs.test-classes-file }}
+          path: target
+
+      - name: download metadata ZIP file (from build output)
+        if: ${{ inputs.metadata-zip-file == '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.metadata-zip-file }}
+          path: target/${{ github.event.repository.name }}
+
+      - name: download deleted metadata CSV file (from build output)
+        if: ${{ inputs.deletes-file == '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.deletes-file }}
+          path: target
+
+      - name: download test classes file (from build output)
+        if: ${{ inputs.test-classes-file == '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.metadata-zip-file }}
           path: target
 
       - name: List artifacts
