@@ -125,17 +125,26 @@ on:
         type: string
         description: The name of the environment in the repository that determines who is authorized to approve deployments to this environment.
         required: false
-      metadata-zip-file:
+      metadata-artifact:
         type: string
-        description: This input is not required, but if set it is required that both `test-classes-file` and `deletes-file` are also set.
+        description:
+          The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete.
+          If omitted, the workflow generates one automatically.
+          If set, deletes-artifact and test-classes-artifact are also required.
         required: false
-      test-classes-file:
+      test-classes-artifact:
         type: string
-        description: This input is not required, but if set it is required that both `metadata-zip-file` and `deletes-file` are also set.
+        description:
+          The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete.
+          If omitted, the workflow generates one automatically.
+          If set, metadata-artifact and test-classes-artifact are also required.
         required: false
-      deletes-file:
+      deletes-artifact:
         type: string
-        description: This input is not required, but if set it is required that both `metadata-zip-file` and `test-classes-file` are also set.
+        description:
+          The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete.
+          If omitted, the workflow generates one automatically.
+          If set, metadata-artifact and test-classes-artifact are also required.
         required: false
     secrets:
       ansible-vault-password:
@@ -160,9 +169,9 @@ jobs:
       run-tests: ${{ inputs.run-tests }}
       destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
       environment: ${{ inputs.environment }}
-      metadata-zip-file: ${{ inputs.metadata-zip-file }}
-      test-classes-file: ${{ inputs.test-classes-file }}
-      deletes-file: ${{ inputs.deletes-file }}
+      metadata-artifact: ${{ inputs.metadata-zip-file }}
+      test-classes-artifact: ${{ inputs.test-classes-file }}
+      deletes-artifact: ${{ inputs.deletes-file }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 

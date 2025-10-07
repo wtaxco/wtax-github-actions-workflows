@@ -72,17 +72,26 @@ on:
         type: string
         description: The name of the environment in the repository that determines who is authorized to approve deployments to this environment.
         required: false
-      metadata-zip-file:
+      metadata-artifact:
         type: string
-        description: This input is not required, but if set it is required that both `test-classes-file` and `deletes-file` are also set.
+        description:
+          The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete.
+          If omitted, the workflow generates one automatically.
+          If set, deletes-artifact and test-classes-artifact are also required.
         required: false
-      test-classes-file:
+      test-classes-artifact:
         type: string
-        description: This input is not required, but if set it is required that both `metadata-zip-file` and `deletes-file` are also set.
+        description:
+          The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete.
+          If omitted, the workflow generates one automatically.
+          If set, metadata-artifact and test-classes-artifact are also required.
         required: false
-      deletes-file:
+      deletes-artifact:
         type: string
-        description: This input is not required, but if set it is required that both `metadata-zip-file` and `test-classes-file` are also set.
+        description:
+          The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete.
+          If omitted, the workflow generates one automatically.
+          If set, metadata-artifact and test-classes-artifact are also required.
         required: false
     secrets:
       ansible-vault-password:
@@ -91,8 +100,10 @@ on:
 
 jobs:
   build:
-    if: inputs.metadata-zip-file == ''
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-artefact.yml@main
+    if: inputs.metadata-artifact == ''
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@main
+    with:
+      run-compile-and-tests: false
 
   deploy:
     needs: [build]
@@ -100,7 +111,7 @@ jobs:
     environment: ${{ inputs.environment }}
     # Temporary: always() is used for backward compatibility with legacy build+deploy workflows.
     # Remove once the unified single-deployment pipeline is in place.
-    if: ${{ always() && (inputs.metadata-zip-file != '' || needs.build.result == 'success') }}
+    if: ${{ always() && (inputs.metadata-artifact != '' || needs.build.result == 'success') }}
     steps:
       - name: check out code
         uses: actions/checkout@v4
@@ -143,45 +154,45 @@ jobs:
         run: ls -R target || true
 
       - name: download metadata ZIP file (from input)
-        if: ${{ inputs.metadata-zip-file != '' }}
+        if: ${{ inputs.metadata-artifact != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.metadata-zip-file }}
+          name: ${{ inputs.metadata-artifact }}
           path: target/${{ github.event.repository.name }}
 
       - name: download deleted metadata CSV file (from input)
-        if: ${{ inputs.deletes-file != '' }}
+        if: ${{ inputs.deletes-artifact != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.deletes-file }}
+          name: ${{ inputs.deletes-artifact }}
           path: target
 
       - name: download test classes file (from input)
-        if: ${{ inputs.test-classes-file != '' }}
+        if: ${{ inputs.test-classes-artifact != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.test-classes-file }}
+          name: ${{ inputs.test-classes-artifact }}
           path: target
 
       - name: download metadata ZIP file (from build output)
-        if: ${{ inputs.metadata-zip-file == '' }}
+        if: ${{ inputs.metadata-artifact == '' }}
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.metadata-zip-file }}
+          name: ${{ needs.build.outputs.metadata-artifact }}
           path: target/${{ github.event.repository.name }}
 
       - name: download deleted metadata CSV file (from build output)
-        if: ${{ inputs.deletes-file == '' }}
+        if: ${{ inputs.deletes-artifact == '' }}
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.deletes-file }}
+          name: ${{ needs.build.outputs.deletes-artifact }}
           path: target
 
       - name: download test classes file (from build output)
-        if: ${{ inputs.test-classes-file == '' }}
+        if: ${{ inputs.test-classes-artifact == '' }}
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.metadata-zip-file }}
+          name: ${{ needs.build.outputs.metadata-artifact }}
           path: target
 
       - name: do destructive changes before deployment
