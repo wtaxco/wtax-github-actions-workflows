@@ -136,14 +136,14 @@ on:
         required: true
 jobs:
   send-predeploy-slack-notification:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   install-package-on-prod:
     needs:
       - send-predeploy-slack-notification
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/install-sfdx-package.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/install-sfdx-package.yml@testing
     with:
       package: ${{ inputs.package }}
       version-number: ${{ inputs.version-number }}
@@ -159,7 +159,7 @@ jobs:
   send-success-slack-notification:
     needs:
       - install-package-on-prod
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-success-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-success-deploy-msg.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
     if: ${{ success() }}
@@ -167,7 +167,7 @@ jobs:
   send-failure-slack-notification:
     needs:
       - install-package-on-prod
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-fail-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-fail-deploy-msg.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
     if: ${{ failure() }}

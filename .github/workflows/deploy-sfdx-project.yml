@@ -106,7 +106,7 @@ on:
 jobs:
   build:
     if: inputs.metadata-artifact == ''
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-sfdx-project.yml@testing
     with:
       run-compile-and-test: false
     secrets:
