@@ -22,7 +22,7 @@ on:
         required: true
 jobs:
   bump-api-versions:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/bump-sfdx-metadata-api-version.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/bump-sfdx-metadata-api-version.yml@testing
     with:
       api-version: ${{ inputs.api-version }}
       jira-issue: ${{ inputs.jira-issue }}
@@ -40,7 +40,7 @@ on:
         required: true
 jobs:
   bump-api-versions:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/bump-sfdx-metadata-api-version.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/bump-sfdx-metadata-api-version.yml@testing
     with:
       instance-url: https://wtax.my.salesforce.com
       jira-issue: ${{ inputs.jira-issue }}

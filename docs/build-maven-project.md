@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   build-maven-project:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-maven-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/build-maven-project.yml@testing
     with:
       sonar-url: https://sonar.wtax.co
       maven-repository-url: https://nexus.wtax.co/repository/maven-public/
