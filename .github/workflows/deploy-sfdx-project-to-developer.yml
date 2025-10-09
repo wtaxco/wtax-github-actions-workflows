@@ -172,8 +172,8 @@ jobs:
       run-tests: ${{ inputs.run-tests }}
       destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
       environment: ${{ inputs.environment }}
-      metadata-artifact: ${{ inputs.metadata-zip-file }}
-      test-classes-artifact: ${{ inputs.test-classes-file }}
-      deletes-artifact: ${{ inputs.deletes-file }}
+      metadata-artifact: ${{ inputs.metadata-artifact }}
+      test-classes-artifact: ${{ inputs.test-classes-artifact }}
+      deletes-artifact: ${{ inputs.deletes-artifact }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}

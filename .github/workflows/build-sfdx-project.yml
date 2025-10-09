@@ -1,4 +1,4 @@
-name: Build & Compile Salesforce Project
+name: Build SFDX Project
 
 on:
   workflow_call:
@@ -143,15 +143,15 @@ on:
         default: true
 
     outputs:
-      metadata-zip-file:
+      metadata-artifact:
         description: 'The zip file containing the Salesforce metadata'
-        value: ${{ jobs.build.outputs.metadata-zip-file }}
-      test-classes-file:
+        value: ${{ jobs.build.outputs.metadata-artifact }}
+      test-classes-artifact:
         description: 'The text file containing the list of test classes to run'
-        value: ${{ jobs.build.outputs.test-classes-file }}
-      deletes-file:
+        value: ${{ jobs.build.outputs.test-classes-artifact }}
+      deletes-artifact:
         description: 'The CSV file containing the list of components marked for deletion'
-        value: ${{ jobs.build.outputs.deletes-file }}
+        value: ${{ jobs.build.outputs.deletes-artifact }}
 
     secrets:
       ansible-vault-password:
@@ -161,9 +161,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      metadata-zip-file: ${{ steps.set-outputs.outputs.metadata-zip-file }}
-      test-classes-file: ${{ steps.set-outputs.outputs.test-classes-file }}
-      deletes-file: ${{ steps.set-outputs.outputs.deletes-file }}
+      metadata-artifact: ${{ steps.set-outputs.outputs.metadata-artifact }}
+      test-classes-artifact: ${{ steps.set-outputs.outputs.test-classes-artifact }}
+      deletes-artifact: ${{ steps.set-outputs.outputs.deletes-artifact }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -264,9 +264,9 @@ jobs:
       - name: Set output values
         id: set-outputs
         run: |
-          echo "metadata-zip-file=${{ github.event.repository.name }}-${{ github.sha }}.zip" >> $GITHUB_OUTPUT
-          echo "test-classes-file=${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" >> $GITHUB_OUTPUT
-          echo "deletes-file=${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv" >> $GITHUB_OUTPUT
+          echo "metadata-artifact=${{ github.event.repository.name }}-${{ github.sha }}.zip" >> $GITHUB_OUTPUT
+          echo "test-classes-artifact=${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" >> $GITHUB_OUTPUT
+          echo "deletes-artifact=${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv" >> $GITHUB_OUTPUT
 
   compile-and-test:
     if: ${{inputs.run-compile-and-test == 'true'}}
