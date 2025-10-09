@@ -19,6 +19,10 @@ on:
         description: The Ansible inventory to run the playbook against, relative to the deploy directory.
         type: string
         required: true
+      environment:
+        type: string
+        description: The name of the environment in the repository that determines who is authorized to approve deployments to this environment.
+        required: false
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.
@@ -29,6 +33,7 @@ on:
 
 jobs:
   deploy:
+    environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     steps:
       - name: Print IP address of runner
