@@ -154,14 +154,14 @@ on:
 
 jobs:
   send-predeploy-slack-notification:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   deploy:
     needs:
       - send-predeploy-slack-notification
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@testing
     with:
       instance-url: ${{ inputs.instance-url }}
       client-id: ${{ inputs.client-id }}
@@ -179,7 +179,7 @@ jobs:
   send-success-slack-notification:
     needs:
       - deploy
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-success-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-success-deploy-msg.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
     if: ${{ success() }}
@@ -187,7 +187,7 @@ jobs:
   send-failure-slack-notification:
     needs:
       - deploy
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-fail-deploy-msg.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-fail-deploy-msg.yml@testing
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
     if: ${{ failure() }}
