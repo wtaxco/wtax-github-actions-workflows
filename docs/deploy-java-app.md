@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   release:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-java-app.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-java-app.yml@testing
     with:
       boot-jar: nexus-releases
       known_hosts: "app01.wtax.co,108.128.232.168 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBPY2ffHZudZ/Hi0oXvEGxULMJ3UjukNvPOg2Q1KgG5IE4iOlGCAbx+h0PTNmmTSsoiK7q9O+x61FSHyvzUY/NyA="

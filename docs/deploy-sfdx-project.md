@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   deploy:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@main
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project.yml@testing
     with:
       instance-url: https://login.salesforce.com
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
