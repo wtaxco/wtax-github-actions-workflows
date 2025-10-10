@@ -30,6 +30,14 @@ jobs:
 | `username`                   | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to create scratch orgs                                                                                                                                         | admin@wtax.prod                                                                       |
 | `ansible-vault-password`     | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                                                                             |                                                                                       |
 
+## Outputs
+
+| Name                     | Type     | Description                                                                    |
+|--------------------------|----------|--------------------------------------------------------------------------------|
+| `package`                | `string` | The name of the package within which the new package version was created       |
+| `package-version-id`     | `string` | The Salesforce id (“subscriber package version ID”) of the new package version |
+| `package-version-number` | `string` | The semantic version number major.minor.patch.build of the new package version |
+
 ## Jobs
 
 This workflow has one job:
