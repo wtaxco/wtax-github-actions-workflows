@@ -17,18 +17,18 @@ to be passed in as secrets to the reusable workflow.
 
 ### For SFDX projects
 
-| Name                                                                                | Description                                                                                                                           |
-|-------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| [build-sfdx-project.yml](docs/build-sfdx-project.md)                                | Deploys source from a Salesforce DX project to a scratch org and runs tests                                                           |
-| [deploy-sfdx-project.yml](docs/deploy-sfdx-project.md)                              | Deploys an SFDX project's metadata to an org                                                                                          |
-| [deploy-sfdx-project-to-developer.yml](docs/deploy-sfdx-project-to-developer.md)    | Deploys an SFDX project's metadata to the WTax developer sandbox                                                                      |
-| [deploy-sfdx-project-to-portalqa.yml](docs/deploy-sfdx-project-to-portalqa.md)      | Deploys an SFDX project's metadata to the WTax portalqa sandbox                                                                       |
-| [deploy-sfdx-project-to-uat.yml](docs/deploy-sfdx-project-to-uat.md)                | Deploys an SFDX project's metadata to the WTax uat sandbox                                                                            |
-| [deploy-sfdx-project-to-prod.yml](docs/deploy-sfdx-project-to-prod.md)              | Deploys an SFDX project's metadata to the WTax production org                                                                         |
-| [prepare-sfdx-scratch-org-pool.yml](docs/prepare-sfdx-scratch-org-pool.md)          | Prepares a pool of scratch orgs for an SFDX project                                                                                   |
-| [create-sfdx-package.yml](docs/create-sfdx-package.md)                              | Creates an SFDX package from the source code in `source-directory`                                                                    |
-| [promote-sfdx-package.yml](docs/promote-sfdx-package.md)                            | Promotes a package version to released state                                                                                          |
-| [install-sfdx-package.yml](docs/install-sfdx-package.md)                            | Installs an SFDX package on a target org using information from the source project to determine the package id                        |
-| [install-sfdx-package-on-developer.yml](docs/install-sfdx-package-on-developer.md)  | Installs an SFDX package on the WTax developer sandbox using information from the source project to determine the package id          |
-| [install-sfdx-package-on-uat.yml](docs/install-sfdx-package-on-uat.md)              | Installs an SFDX package on the WTax uat sandbox using information from the source project to determine the package id                |
-| [install-sfdx-package-on-prod.yml](docs/install-sfdx-package-on-prod.md)            | Installs an SFDX package on the WTax production org using information from the source project to determine the package id |
+| Name                                                                                | Description                                                                                                                  |
+|-------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| [build-sfdx-project.yml](docs/build-sfdx-project.md)                                | Builds a metadata bundle from a Salesforce DX project, optionally deploying it to a scratch org and running tests            |
+| [deploy-sfdx-project.yml](docs/deploy-sfdx-project.md)                              | Deploys an SFDX project's metadata to an org                                                                                 |
+| [deploy-sfdx-project-to-developer.yml](docs/deploy-sfdx-project-to-developer.md)    | Deploys an SFDX project's metadata to the WTax developer sandbox                                                             |
+| [deploy-sfdx-project-to-portalqa.yml](docs/deploy-sfdx-project-to-portalqa.md)      | Deploys an SFDX project's metadata to the WTax portalqa sandbox                                                              |
+| [deploy-sfdx-project-to-uat.yml](docs/deploy-sfdx-project-to-uat.md)                | Deploys an SFDX project's metadata to the WTax uat sandbox                                                                   |
+| [deploy-sfdx-project-to-prod.yml](docs/deploy-sfdx-project-to-prod.md)              | Deploys an SFDX project's metadata to the WTax production org                                                                |
+| [prepare-sfdx-scratch-org-pool.yml](docs/prepare-sfdx-scratch-org-pool.md)          | Prepares a pool of scratch orgs for an SFDX project                                                                          |
+| [create-sfdx-package.yml](docs/create-sfdx-package.md)                              | Creates an SFDX package from the source code in `source-directory`                                                           |
+| [promote-sfdx-package.yml](docs/promote-sfdx-package.md)                            | Promotes a package version to released state                                                                                 |
+| [install-sfdx-package.yml](docs/install-sfdx-package.md)                            | Installs an SFDX package on a target org using information from the source project to determine the package id               |
+| [install-sfdx-package-on-developer.yml](docs/install-sfdx-package-on-developer.md)  | Installs an SFDX package on the WTax developer sandbox using information from the source project to determine the package id |
+| [install-sfdx-package-on-uat.yml](docs/install-sfdx-package-on-uat.md)              | Installs an SFDX package on the WTax uat sandbox using information from the source project to determine the package id       |
+| [install-sfdx-package-on-prod.yml](docs/install-sfdx-package-on-prod.md)            | Installs an SFDX package on the WTax production org using information from the source project to determine the package id    |

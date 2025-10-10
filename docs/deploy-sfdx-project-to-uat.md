@@ -10,6 +10,7 @@ jobs:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/deploy-sfdx-project-to-uat.yml@main
     with:
       run-tests: ${{ inputs.run-tests == null || inputs.run-tests }}
+      environment: uat
     secrets:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
@@ -24,6 +25,10 @@ jobs:
 | `username`                             | Input          | `string`  | Username of Salesforce user to authenticate as; must have permission to depoy metadata                                                                                                                                      | admin@wtax.prod.uat                                                                   |
 | `run-tests`                            | Input          | `boolean` | Whether to run tests as part of the deployment. This is required when deploying to a production org.                                                                                                                        | true                                                                                  |
 | `destructive-changes-after-deployment` | Input          | `boolean` | Instruct Salesforce to apply destructive changes (i.e. deletes) after the deployment. This is the default. In some cases you may want to apply destructive changes before deploying. In that case, set this input to false. | true                                                                                  |
+| `environment`                          | Input          | `string`  | The name of a GitHub deployment environment in the repository that determines which deployment protection rules, such as reviews, will apply to this deployment.                                                            |                                                                                       |
+| `metadata-artifact`                    | Input          | `string`  | The name of a previously uploaded artifact containing the metadata to deploy. If omitted, the workflow generates one automatically. If set, `deletes-artifact` and `test-classes-artifact` must also be specified.                                                                      |
+| `test-classes-artifact`                | Input          | `string`  | The name of a previously uploaded artifact containing a test-classes.txt file with the names of Apex test classes in the metadata, one class per line. If omitted, the workflow generates one automatically. If set, `metadata-artifact` and `deletes-artifact` must also be specified. |
+| `deletes-artifact`                     | Input          | `string`  | The name of a previously uploaded artifact containing a deletes.csv file with metadata to delete. If omitted, the workflow generates one automatically. If set, `metadata-artifact` and `test-classes-artifact` must also be specified.                                                 |
 | `ansible-vault-password`               | Secret         | `string`  | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                                                                     |                                                                                       |
 
 ## Jobs

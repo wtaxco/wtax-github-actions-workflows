@@ -12,7 +12,7 @@ jobs:
       ansible-vault-password: ${{ secrets.VAULT_PASSWORD }}
 ```
 
-#### Inputs and secrets
+## Inputs and secrets
 
 | Name                                | Input / secret | Type     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Default                                                                               |
 |-------------------------------------|----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
@@ -24,10 +24,19 @@ jobs:
 | `ansible-vault-password`            | Secret         | `string` | Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                       |
 | `texei-installation-keys-encrypted` | Input          | `string` | Parameter to be passed as the value of the `--installationkeys` option of the `texei:package:dependencies:install` command. It should contain the installation keys of password-protected packages in the order in which they appear in sfdx-project.json, e.g. "1:MyPackage1Key 2: 3:MyPackage3Key". See https://github.com/texei/texei-sfdx-plugin for more information. (This should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!). DEPRECATED: add installation keys to `sfdx-project.json` instead. If this parameter is provided, packages will be installed using `sf texei package dependencies install`. Otherwise, `sf dependency install` from the sfpowerscripts plugin will be used. |                                                                                       |
 
-#### Jobs
+## Outputs
+
+| Name                    | Type     | Description                                                                                                                                                     |
+|-------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `metadata-artifact`     | `string` | The name of the artifact uploaded by the workflow containing the Salesforce metadata                                                                            |
+| `test-classes-artifact` | `string` | The name of the artifact uploaded by the workflow containing a single file `test-classes.txt` with the names of Apex classes in the project, one class per line |
+| `deletes-artifact`      | `string` | The name of the artifact uploaded by the workflow containing a single file `deletes.csv` with the details of metadata components marked for deletion            |
+
+
+## Jobs
 
 This workflow has one jobs:
-- **build** - deploys source from a Salesforce DX project to a scratch org and runs tests
+- **build** - Builds a metadata bundle from a Salesforce DX project, optionally deploying it to a scratch org and running tests
 
 ## Notes
 

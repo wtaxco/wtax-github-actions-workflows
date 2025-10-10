@@ -7,7 +7,7 @@
 ```yaml
 jobs:
   release:
-    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@1.3.0
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/maven-release.yml@main
     with:
       release-version: ${{ inputs.release-version }}
       skip-prepare: ${{ inputs.release-version }}
