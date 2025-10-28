@@ -72,6 +72,10 @@ on:
         type: string
         description: The name of a GitHub deployment environment in the repository that determines which deployment protection rules, such as reviews, will apply to this deployment.
         required: false
+      running-environment:
+        type: string
+        description: The name of the deployment environment in the repository that the workflow is being called from.
+        required: false
       metadata-artifact:
         type: string
         description:
@@ -388,6 +392,6 @@ jobs:
       - name: archive target directory
         uses: actions/upload-artifact@v4
         with:
-          name: target
+          name: {{inputs.running-environment}}-deployment-target-artifact
           path: target
         if: always()

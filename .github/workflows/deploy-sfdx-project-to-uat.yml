@@ -165,5 +165,6 @@ jobs:
       metadata-artifact: ${{ inputs.metadata-artifact }}
       test-classes-artifact: ${{ inputs.test-classes-artifact }}
       deletes-artifact: ${{ inputs.deletes-artifact }}
+      running-environment: uat
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
