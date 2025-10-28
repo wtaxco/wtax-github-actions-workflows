@@ -392,6 +392,6 @@ jobs:
       - name: archive target directory
         uses: actions/upload-artifact@v4
         with:
-          name: {{inputs.running-environment}}-deployment-target-artifact
+          name: ${{inputs.running-environment}}-deployment-target-artifact
           path: target
         if: always()
