@@ -223,10 +223,10 @@ jobs:
       - name: create unsigned plugin allowlist
         run: |
           mkdir -p $HOME/.config/sf
-          echo '[ "@dxatscale/sfpowerscripts", "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+          echo '[ "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
 
-      - name: install sfpowerscripts plugin
-        run: sf plugins install @dxatscale/sfpowerscripts
+      - name: install sfpowerscripts
+        run: npm install -f @flxbl-io/sfp
 
       - name: connect to Dev Hub
         run: |
@@ -297,7 +297,7 @@ jobs:
           done >>$GITHUB_OUTPUT
 
       - name: install dependencies
-        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
+        run: sfp dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
 
       - name: install package
         run: sf package install --package "${{ steps.package-version.outputs.id }}" --installation-key "${installation_key_decrypted}" -w 15

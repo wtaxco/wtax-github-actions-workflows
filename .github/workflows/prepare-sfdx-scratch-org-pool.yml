@@ -57,13 +57,8 @@ jobs:
       - name: install Salesforce CLI
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
 
-      - name: create unsigned plugin allowlist
-        run: |
-          mkdir -p $HOME/.config/sf
-          echo '[ "@dxatscale/sfpowerscripts" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
-
-      - name: install sfpowerscripts plugin
-        run: sf plugins install @dxatscale/sfpowerscripts
+      - name: install sfpowerscripts
+        run: npm install -g @flxbl-io/sfp
 
       - name: write Ansible Vault password to file
         run: echo '${{ secrets.ansible-vault-password }}' >.vault-password

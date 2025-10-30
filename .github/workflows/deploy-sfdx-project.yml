@@ -137,7 +137,7 @@ jobs:
       - name: create unsigned plugin allowlist
         run: |
           mkdir -p $HOME/.config/sf
-          echo '[ "@dxatscale/sfpowerscripts", "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+          echo '[ "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
 
       - name: write Ansible Vault password to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password

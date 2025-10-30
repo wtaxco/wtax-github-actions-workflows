@@ -297,13 +297,8 @@ jobs:
       - name: install Salesforce CLI
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
 
-      - name: create unsigned plugin allowlist
-        run: |
-          mkdir -p $HOME/.config/sf
-          echo '[ "@dxatscale/sfpowerscripts" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
-
-      - name: install sfpowerscripts plugin
-        run: sf plugins install @dxatscale/sfpowerscripts
+      - name: install sfpowerscripts
+        run: npm install -g @flxbl-io/sfp
 
       - name: connect to Dev Hub
         run: |
@@ -352,7 +347,7 @@ jobs:
           done >>$GITHUB_OUTPUT
 
       - name: install dependencies using sfpowerscripts
-        run: sf dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
+        run: sfp dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
 
       - name: run scripts
         run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done || echo "No pre-test scripts to run."
