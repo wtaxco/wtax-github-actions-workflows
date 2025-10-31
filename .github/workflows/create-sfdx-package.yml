@@ -197,6 +197,9 @@ jobs:
       - name: check out code
         uses: actions/checkout@v4
 
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
+
       - name: install jq
         run: sudo apt-get install -y jq
 

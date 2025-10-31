@@ -142,6 +142,9 @@ jobs:
         with:
           sparse-checkout: sfdx-project.json
 
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
+
       - name: install jq
         run: sudo apt-get install -y jq
 

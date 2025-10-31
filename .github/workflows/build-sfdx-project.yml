@@ -146,133 +146,24 @@ on:
     outputs:
       metadata-artifact:
         description: The name of the artifact uploaded by the workflow containing the Salesforce metadata
-        value: ${{ jobs.build.outputs.metadata-artifact }}
+        value: ${{ jobs.package.outputs.metadata-artifact }}
       test-classes-artifact:
         description: The name of the artifact uploaded by the workflow containing a single file test-classes.txt with the names of Apex classes in the project, one class per line
-        value: ${{ jobs.build.outputs.test-classes-artifact }}
+        value: ${{ jobs.package.outputs.test-classes-artifact }}
       deletes-artifact:
         description: The name of the artifact uploaded by the workflow containing a single file deletes.csv with the details of metadata components marked for deletion
-        value: ${{ jobs.build.outputs.deletes-artifact }}
+        value: ${{ jobs.package.outputs.deletes-artifact }}
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    outputs:
-      metadata-artifact: ${{ steps.set-outputs.outputs.metadata-artifact }}
-      test-classes-artifact: ${{ steps.set-outputs.outputs.test-classes-artifact }}
-      deletes-artifact: ${{ steps.set-outputs.outputs.deletes-artifact }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Install jq
-        run: sudo apt-get install -y jq
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18.x
-
-      - name: Install Salesforce CLI (sfdx)
-        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
-
-      - name: Package the source as metadata
-        run: |
-          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
-          sf project convert source \
-            --source-dir force-app \
-            --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
-
-      - name: Determine which components are marked for deletion
-        run: |
-          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
-            filename=`basename "$line"`
-            ext=${filename##*.}
-            component=`basename "$filename" .$ext`
-            if [ "${ext}" == "cls" ]; then type=ApexClass
-            elif [ "${ext}" == "trigger" ]; then type=ApexTrigger
-            elif [ "${ext}" == "page" ]; then type=ApexPage
-            elif [ "${ext}" == "component" ]; then type=ApexComponent
-            elif [ "${ext}" == "network" ]; then type=Network
-            elif [ "${ext}" == "site" ]; then type=Site
-            elif [ "${ext}" == "flow" ]; then type=Flow
-            else type=Unknown; fi
-            echo "${line},${type},${component}"
-          done > target/deletes.csv
-          echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
-
-      - name: Archive deletes.csv
-        id: archive-deletes
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
-          path: target/deletes.csv
-
-      - name: Remove components marked as deleted from metadata
-        run: |
-          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
-          >target/deletes-apexClasses.txt
-          echo "Removing components marked as deleted from metadata directory..."
-
-          awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
-            eval $line
-            rm $path
-            if [ "$type" != "Flow" ]; then
-                rm $path-meta.xml
-            fi
-            sed -i.bak "/<members>${fullName}<\\/members>/d" ${metadata_directory}/package.xml
-
-            if [ "$type" == "ApexClass" ]; then
-              echo "${fullName}" >> target/deletes-apexClasses.txt
-            fi
-          done
-
-          rm -f ${metadata_directory}/package.xml.bak
-          echo "`wc -l <target/deletes.csv` components removed from metadata directory."
-
-      - name: Find unit test classes in project
-        run: |
-          echo "Finding unit tests in project..."
-          if [ -d "force-app/test" ]; then
-            find force-app/test -name '*.cls' | while read test; do
-              testClass="$(basename "${test}" .cls)"
-              grep "${testClass}" target/deletes-apexClasses.txt >/dev/null || echo "${testClass}" >>target/test-classes.txt
-            done
-          else
-            echo "No force-app/test directory found. Skipping task."
-            touch target/test-classes.txt
-          fi
-
-      - name: Archive test-classes.txt
-        id: archive-tests
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
-          path: target/test-classes.txt
-
-      - name: Archive metadata directory
-        id: archive-metadata
-        uses: actions/upload-artifact@v4
-        with:
-          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
-          path: target/${{ github.event.repository.name }}-${{ github.sha }}
-
-      - name: Set output values
-        id: set-outputs
-        run: |
-          echo "metadata-artifact=${{ github.event.repository.name }}-${{ github.sha }}.zip" >> $GITHUB_OUTPUT
-          echo "test-classes-artifact=${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" >> $GITHUB_OUTPUT
-          echo "deletes-artifact=${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv" >> $GITHUB_OUTPUT
-          echo "run-compile-and-test=${{ inputs.run-compile-and-test }}" >> $GITHUB_OUTPUT
-
   compile-and-test:
     if: ${{inputs.run-compile-and-test == true}}
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: check out code
         uses: actions/checkout@v4
+
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -405,17 +296,122 @@ jobs:
             fi
           done
 
-      - name: package the source as metadata
-        run: |
-          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
-          sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
-
-      - name: archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}-${{ github.sha }}
-          path: target/${{ github.event.repository.name }}-${{ github.sha }}
-
       - name: delete scratch org
         run: sf org delete scratch -p
         if: always() && inputs.delete-scratch-org-after-run
+
+  package:
+    needs: compile-and-test
+    runs-on: ubuntu-latest
+    outputs:
+      metadata-artifact: ${{ steps.set-outputs.outputs.metadata-artifact }}
+      test-classes-artifact: ${{ steps.set-outputs.outputs.test-classes-artifact }}
+      deletes-artifact: ${{ steps.set-outputs.outputs.deletes-artifact }}
+    steps:
+      - name: check out code
+        uses: actions/checkout@v4
+
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
+
+      - name: install jq
+        run: sudo apt-get install -y jq
+
+      - name: set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+
+      - name: install Salesforce CLI (sfdx)
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
+
+      - name: package the source as metadata
+        run: |
+          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
+          sf project convert source \
+            --source-dir force-app \
+            --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
+
+      - name: archive metadata directory
+        id: archive-metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
+          path: target/${{ github.event.repository.name }}-${{ github.sha }}
+
+      - name: determine which components are marked for deletion
+        run: |
+          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
+          grep -rE '(^\/\/ *DELETE$|^<!-- *DELETE *-->)' "${metadata_directory}" | awk -F':' '{print $1}' | while read line; do
+            filename=`basename "$line"`
+            ext=${filename##*.}
+            component=`basename "$filename" .$ext`
+            if [ "${ext}" == "cls" ]; then type=ApexClass
+            elif [ "${ext}" == "trigger" ]; then type=ApexTrigger
+            elif [ "${ext}" == "page" ]; then type=ApexPage
+            elif [ "${ext}" == "component" ]; then type=ApexComponent
+            elif [ "${ext}" == "network" ]; then type=Network
+            elif [ "${ext}" == "site" ]; then type=Site
+            elif [ "${ext}" == "flow" ]; then type=Flow
+            else type=Unknown; fi
+            echo "${line},${type},${component}"
+          done > target/deletes.csv
+          echo "`wc -l < target/deletes.csv` component(s) marked for deletion"
+
+      - name: archive deletes.csv
+        id: archive-deletes
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
+          path: target/deletes.csv
+
+      - name: remove components marked as deleted from metadata
+        run: |
+          metadata_directory="target/${{ github.event.repository.name }}-${{ github.sha }}"
+          >target/deletes-apexClasses.txt
+          echo "Removing components marked as deleted from metadata directory..."
+
+          awk -F, '{print "path=\""$1"\" type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv | while read line; do
+            eval $line
+            rm $path
+            if [ "$type" != "Flow" ]; then
+                rm $path-meta.xml
+            fi
+            sed -i.bak "/<members>${fullName}<\\/members>/d" ${metadata_directory}/package.xml
+
+            if [ "$type" == "ApexClass" ]; then
+              echo "${fullName}" >> target/deletes-apexClasses.txt
+            fi
+          done
+
+          rm -f ${metadata_directory}/package.xml.bak
+          echo "`wc -l <target/deletes.csv` components removed from metadata directory."
+
+      - name: find unit test classes in project
+        run: |
+          echo "Finding unit tests in project..."
+          if [ -d "force-app/test" ]; then
+            find force-app/test -name '*.cls' | while read test; do
+              testClass="$(basename "${test}" .cls)"
+              grep "${testClass}" target/deletes-apexClasses.txt >/dev/null || echo "${testClass}" >>target/test-classes.txt
+            done
+          else
+            echo "No force-app/test directory found. Skipping task."
+            touch target/test-classes.txt
+          fi
+
+      - name: archive test-classes.txt
+        id: archive-tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
+          path: target/test-classes.txt
+
+      - name: set output values
+        id: set-outputs
+        run: |
+          echo "metadata-artifact=${{ github.event.repository.name }}-${{ github.sha }}.zip" >> $GITHUB_OUTPUT
+          echo "test-classes-artifact=${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt" >> $GITHUB_OUTPUT
+          echo "deletes-artifact=${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv" >> $GITHUB_OUTPUT
+          echo "run-compile-and-test=${{ inputs.run-compile-and-test }}" >> $GITHUB_OUTPUT
+

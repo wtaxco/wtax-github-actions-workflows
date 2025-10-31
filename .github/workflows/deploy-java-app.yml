@@ -38,24 +38,29 @@ jobs:
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
+
       - name: Copy artifacts into workspace
         uses: actions/download-artifact@v4
         with:
           name: artifact
           path: deploy
+
       - name: Copy deploy scripts into workspace
         uses: actions/download-artifact@v4
         with:
           name: deploy-scripts
           path: deploy
+
       - name: Write Ansible Vault password out to file
         run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
         working-directory: ./deploy
+
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.ssh-private-key }}
           known_hosts: ${{ inputs.known-hosts }}
+
       - name: Run deploy playbook
         run: ansible-playbook -i ${{ inputs.ansible-inventory }} -e boot_jar=${{ inputs.boot-jar }} --vault-password-file=.vault-password deploy.yml
         working-directory: ./deploy

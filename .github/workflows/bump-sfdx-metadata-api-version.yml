@@ -26,6 +26,9 @@ jobs:
       - name: check out code
         uses: actions/checkout@v3
 
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
+
       - name: git configure user.name and user.email
         run: |
           git config --global user.name '${{ github.actor }}'

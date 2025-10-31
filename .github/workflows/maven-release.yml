@@ -44,15 +44,23 @@ jobs:
   prepare_release:
     name: "Prepare release"
     runs-on: ubuntu-latest
+
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
+
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
+
       - name: remove crappy azure repo from APT sources
         run: sudo sed -i 's/azure\.//' /etc/apt/sources.list && sudo apt-get update
+
       - name: install libxml2-utils
         run: sudo apt -y install libxml2-utils
+
       - name: Check out project
         uses: actions/checkout@v3
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -60,6 +68,7 @@ jobs:
           java-version: ${{ inputs.jdk-version }}
           cache: maven
         if: ${{ ! inputs.skip-prepare }}
+
       - name: maven-settings-xml-action
         uses: whelk-io/maven-settings-xml-action@v14
         with:
@@ -80,27 +89,35 @@ jobs:
               }
             ]
         if: ${{ ! inputs.skip-prepare }}
+
       - name: Configure Git user
         run: |
           git config user.email "github-actions@wtax.co"
           git config user.name "GitHub Actions"
         if: ${{ ! inputs.skip-prepare }}
+
       - name: Set release version to requested value
         run: echo 'VERSION=${{ inputs.release-version }}' >> $GITHUB_ENV
+
       - name: Deduce release version from current SNAPSHOT version
         run: xmllint --xpath "/*[local-name()='project']/*[local-name()='version']/text()" pom.xml | sed -e 's/\(.*\)-SNAPSHOT/VERSION=\1/' >> $GITHUB_ENV
         if: ${{ inputs.release-version == '' }}
+
       - name: Update POM file(s) with release version
         run: mvn -B versions:set -DnewVersion=${{ env.VERSION }}
         if: ${{ ! inputs.skip-prepare }}
+
       - name: Determine release branch
         run: echo RELEASE_BRANCH=release/v${{ env.VERSION }} >> $GITHUB_ENV
+
       - name: Create release branch and push updated POM file
         run: git checkout -b ${{ env.RELEASE_BRANCH }} && git add pom.xml && git commit -m "[release] Update pom.xml to release version ${{ env.VERSION }}" && git push origin ${{ env.RELEASE_BRANCH }}
         if: ${{ ! inputs.skip-prepare }}
+
       - name: Update pom.xml to next development version on main branch
         run: git checkout main && mvn -B versions:set -DnewVersion=${{ env.VERSION }} && mvn -B release:update-versions -DautoVersionSubmodules=true && git add pom.xml && git commit -m "[release] Update pom.xml to next SNAPSHOT version" && git push
         if: ${{ ! inputs.skip-prepare }}
+
     outputs:
       release-version: ${{ env.VERSION }}
       release-branch: ${{ env.RELEASE_BRANCH }}
@@ -112,16 +129,19 @@ jobs:
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
+
       - name: Check out release tag or branch of the project
         uses: actions/checkout@v3
         with:
           ref: ${{ needs.prepare_release.outputs.release-branch }}
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
           distribution: zulu
           java-version: ${{ inputs.jdk-version }}
           cache: maven
+
       - name: maven-settings-xml-action
         uses: whelk-io/maven-settings-xml-action@v14
         with:
@@ -146,10 +166,12 @@ jobs:
                 "password": "${{ secrets.maven-repository-password }}"
               }
             ]
+
       - name: Configure Git user
         run: |
           git config user.email "github-actions@wtax.co"
           git config user.name "GitHub Actions"
+
       - name: Cache CVE database for OWASP dependency-check
         uses: actions/cache@v3
         with:
@@ -157,5 +179,6 @@ jobs:
           key: "${{ runner.os }}-dependency-check-database-${{ hashFiles('dependency-check-data/nvdcve-1.1-modified.meta') }}"
           restore-keys: |
             ${{ runner.os }}-dependency-check-database-
+
       - name: Build and deploy artifact(s)
         run: mvn -B clean deploy -DdataDirectory=dependency-check-data

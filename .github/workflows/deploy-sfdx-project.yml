@@ -122,6 +122,13 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            sfdx-project.json
+            deploy
+
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -157,7 +164,7 @@ jobs:
             --username=${{ inputs.username }} \
             --set-default
 
-      - name: List artifacts
+      - name: list artifacts
         run: ls -R target || true
 
       - name: download metadata ZIP file (from input)

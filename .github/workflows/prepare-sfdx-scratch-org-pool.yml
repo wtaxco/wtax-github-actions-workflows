@@ -37,11 +37,19 @@ jobs:
       - name: print out inputs (for debugging purposes)
         run: |
           echo 'inputs.instance-url = ${{ inputs.instance-url }}' 
+
   prepare:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            sfdx-project.json
+            config
+
+      - name: disable man-db auto-update
+        run: sudo debconf-set man-db/auto-update false && sudo rm /var/lib/man-db/auto-update
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -69,9 +77,9 @@ jobs:
       - name: decrypt the sfdx auth url
         run: ansible-vault decrypt --vault-password-file=.vault-password sfdxAuthUrl.txt
 
-      - name: connect to org with sfdxurl:store
+      - name: connect to org with auth sfdxurl store
         run: |
-          sfdx auth:sfdxurl:store \
+          sf auth sfdxurl store \
           --sfdx-url-file sfdxAuthUrl.txt \
           --alias OrgPool \
           --setdefaultusername \
@@ -107,4 +115,4 @@ jobs:
             done >>$GITHUB_OUTPUT
 
       - name: prepare scratch org pool
-        run: sf orchestrator prepare -v OrgPool --loglevel debug --keys "${{ steps.installationkeys.outputs.installationkeys }}"
+        run: sfp orchestrator prepare -v OrgPool --loglevel debug --keys "${{ steps.installationkeys.outputs.installationkeys }}"
