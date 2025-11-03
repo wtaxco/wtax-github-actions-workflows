@@ -1,0 +1,16 @@
+name: read and decrypt installation keys from sfdx-project.json
+description: read and decrypt installation keys from sfdx-project.json
+inputs:
+  key:
+    description: the key used to decrypt encrypted installation keys
+    required: true
+outputs:
+  installation-keys:
+    description: the decrypted installation keys, in a format suitable for use in sfpowerscript commands, e.g. "package1:key1 package2:key2"
+    value: ${{ steps.installation-keys.outputs.installation_key }}
+runs:
+  using: composite
+  steps:
+    - id: installation-keys
+      run: ${{ github.action_path }}/read-installation-keys/read-installation-keys.sh
+      shell: bash
