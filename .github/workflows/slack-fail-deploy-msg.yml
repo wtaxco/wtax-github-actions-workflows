@@ -23,6 +23,7 @@ on:
 jobs:
   send-failure-notification:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
 
       - name: write encrypted Slack webhook url to file

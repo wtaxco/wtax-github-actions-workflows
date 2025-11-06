@@ -15,6 +15,10 @@ on:
           33326332323535663830366336333433323765313736353138393130666339623838393437396566
           34313230313535333332656337643937626162653931383135633239653939303635643936326331
           30343066313865306161
+      environment:
+        type: string
+        description: The name of a GitHub deployment environment in the repository that determines which deployment protection rules, such as reviews, will apply to this deployment.
+        required: false
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt the `slack-webhook-url-encrypted`.
@@ -23,6 +27,7 @@ on:
 jobs:
   send-pre-deployment-notification:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
 
       - name: write encrypted Slack webhook url to file
