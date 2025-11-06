@@ -137,6 +137,8 @@ on:
 jobs:
   send-predeploy-slack-notification:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/slack-pre-deploy-msg.yml@main
+    with:
+      environment: ${{ inputs.environment }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
