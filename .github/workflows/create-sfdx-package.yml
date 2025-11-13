@@ -39,11 +39,6 @@ on:
             62313437626230323039313033636533303636613036663030316462666638366233363832613638
             6566386233623363300a343538386131373737616539333666343263323932356637396336386635
             3136
-      promote:
-        type: boolean
-        description: Whether to promote the package version to released after creating it.
-        required: false
-        default: false
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -303,81 +298,18 @@ jobs:
         run: sf package install --package "${{ steps.package-version.outputs.id }}" --installation-key "${installation_key_decrypted}" -w 15
 
       - name: run tests and produce coverage report
-        run: sf apex run test --synchronous --code-coverage --result-format=json --output-dir=reports/coverage
-        if: inputs.sonar-url != ''
-
-      - name: install apex-code-coverage-transformer plugin
-        run: sf plugins install apex-code-coverage-transformer@1.7.6
-        if: inputs.sonar-url != ''
-
-      - name: convert test coverage report to Sonarqube format
-        run: sf apex-code-coverage transformer transform -j reports/coverage/test-result-codecoverage.json -x reports/coverage/coverage.xml --command=test
-        if: inputs.sonar-url != ''
-
-      - name: write encrypted Docker registry password to file
-        run: echo '${{ inputs.docker-password-encrypted }}' >.docker-password
-        if: inputs.sonar-url != ''
-
-      - name: decrypt the Docker registry password
         run: |
-          ansible-vault decrypt --vault-password-file=.vault-password .docker-password >>$GITHUB_ENV
-        if: inputs.sonar-url != ''
+          sf apex run test \
+            --synchronous \
+            --code-coverage \
+            --result-format=json \
+            --output-dir=reports/deploy-coverage
 
-      - name: log in to the docker.wtax.co Docker registry
-        run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co <.docker-password
-        if: inputs.sonar-url != ''
-
-      - name: retrieve Apex ruleset
-        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/testing/assets/pmd/apex-ruleset.xml
-        if: inputs.sonar-url != ''
-
-      - name: run PMD static code analysis for Apex code
-        run: >
-            docker run 
-            --rm
-            -v .:/usr/src 
-            docker.wtax.co/wtax/pmd:7.1.0 
-            check 
-            --rulesets=/usr/src/apex-ruleset.xml 
-            --dir=/usr/src 
-            --report-file=/usr/src/reports/pmd.xml 
-            --format=xml
-            --no-fail-on-violation
-        if: inputs.sonar-url != ''
-
-      - name: write encrypted sonar token to file
-        run: echo '${{ inputs.sonar-login-encrypted }}' >.sonar-login
-        if: inputs.sonar-url != ''
-
-      - name: tell GitHub Actions to mask the sonar token in the log
-        run: echo "::add-mask::$(ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login)"
-        if: inputs.sonar-url != ''
-
-      - name: decrypt the sonar token
-        run: |
-          echo -n "sonar_login_decrypted=">$GITHUB_ENV
-          ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login >>$GITHUB_ENV
-        if: inputs.sonar-url != ''
-
-      - name: send test coverage results to Sonar
-        run: >
-            docker run --rm 
-            -e SONAR_HOST_URL="${{ inputs.sonar-url }}" 
-            -e SONAR_LOGIN="${sonar_login_decrypted}" 
-            -v ".:/usr/src" 
-            sonarsource/sonar-scanner-cli:5 
-            -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} 
-            -Dsonar.javascript.file.suffixes=.cls 
-            -Dsonar.sources=${{ inputs.source-directory }}/main 
-            -Dsonar.tests=${{ inputs.source-directory }}/test 
-            -Dsonar.coverageReportPaths=reports/coverage/coverage.xml 
-            -Dsonar.java.pmd.reportPaths=reports/pmd.xml
-            -Dsonar.qualitygate.wait=${{ inputs.sonar-quality-gate == true }}
-        if: inputs.sonar-url != ''
-
-      - name: promote package
-        run: sfdx package version promote --package "${{ steps.package-version.outputs.id }}" --no-prompt
-        if: inputs.promote
+      - name: archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-coverage
+          path: reports/deploy-coverage
 
       - name: run package version report
         run: |
@@ -389,3 +321,17 @@ jobs:
       - name: delete scratch org
         run: sfdx org delete scratch -p
         if: always()
+
+  sonar_and_pmd:
+    if: ${{ always() && inputs.sonar-url != '' }}
+    uses: wtaxco/wtax-github-actions-workflows/.github/workflows/sonar-and-pmd.yml@main
+    needs: package
+    with:
+      sonar-url: ${{ inputs.sonar-url }}
+      source-directory: ${{ inputs.source-directory }}
+      docker-username: ${{ inputs.docker-username }}
+      docker-password-encrypted: ${{ inputs.docker-password-encrypted }}
+      sonar-login-encrypted: ${{ inputs.sonar-login-encrypted }}
+      sonar-quality-gate: ${{ inputs.sonar-quality-gate }}
+    secrets:
+      ansible-vault-password: ${{ secrets.ansible-vault-password }}
