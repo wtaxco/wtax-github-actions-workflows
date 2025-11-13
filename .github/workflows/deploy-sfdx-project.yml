@@ -320,26 +320,58 @@ jobs:
           echo "Deploying to ${{ inputs.username }} and running unit tests... (timeout ${timeout} minutes)"
           sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}" --wait=${timeout}
 
+      - name: archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-coverage
+          path: reports
+
+      - name: archive target directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: target
+          path: target
+        if: always()
+
+  sonar-and-pmd:
+    needs: deploy
+    if: inputs.sonar-url != ''
+    runs-on:
+      group: larger-runner-ci
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: prepare directories
+        run: mkdir -p reports/coverage
+
+      - name: download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-coverage
+          path: reports
+
+      - name: write Ansible Vault password to file
+        run: echo "${{ secrets.ansible-vault-password }}" > .vault-password
+
+      - name: install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
       - name: install apex-code-coverage-transformer plugin
         run: sf plugins install apex-code-coverage-transformer@1.7.6
-        if: inputs.sonar-url != ''
 
       - name: convert test coverage report to Sonarqube format
         run: sf apex-code-coverage transformer transform -j reports/coverage/coverage.json -x reports/coverage/coverage.xml
-        if: inputs.sonar-url != ''
 
       - name: write encrypted Docker registry password to file
         run: echo '${{ inputs.docker-password-encrypted }}' >.docker-password
-        if: inputs.sonar-url != ''
 
       - name: decrypt the Docker registry password
         run: |
           ansible-vault decrypt --vault-password-file=.vault-password .docker-password >>$GITHUB_ENV
-        if: inputs.sonar-url != ''
 
       - name: log in to the docker.wtax.co Docker registry
-        run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co <.docker-password
-        if: inputs.sonar-url != ''
+        run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co < .docker-password
 
       - name: retrieve Apex ruleset
         run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/testing/assets/pmd/apex-ruleset.xml
