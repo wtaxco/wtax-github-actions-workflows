@@ -1,0 +1,119 @@
+name: Sonar and PMD Analysis
+
+on:
+  workflow_call:
+    inputs:
+      sonar-url:
+        type: string
+        required: true
+      source-directory:
+        type: string
+        required: true
+      docker-username:
+        type: string
+        required: true
+      docker-password-encrypted:
+        type: string
+        required: true
+      sonar-login-encrypted:
+        type: string
+        required: true
+      sonar-quality-gate:
+        type: boolean
+        default: true
+        required: false
+    secrets:
+      ansible-vault-password:
+        required: true
+
+jobs:
+  sonar-and-pmd:
+    runs-on:
+      group: larger-runner-ci
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: prepare environment
+        run: mkdir -p reports/coverage
+
+      - name: write Ansible Vault password to file
+        run: echo "${{ secrets.ansible-vault-password }}" > .vault-password
+
+      - name: install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: write encrypted Docker registry password to file
+        run: echo '${{ inputs.docker-password-encrypted }}' > .docker-password
+
+      - name: decrypt the Docker registry password
+        run: |
+          ansible-vault decrypt --vault-password-file=.vault-password .docker-password >> $GITHUB_ENV
+
+      - name: log in to the docker.wtax.co Docker registry
+        run: docker login -u ${{ inputs.docker-username }} --password-stdin docker.wtax.co < .docker-password
+
+      - name: retrieve Apex ruleset
+        run: curl --output apex-ruleset.xml https://raw.githubusercontent.com/wtaxco/wtax-github-actions-workflows/testing/assets/pmd/apex-ruleset.xml
+
+      - name: install apex-code-coverage-transformer plugin
+        run: sf plugins install apex-code-coverage-transformer@2.5.2
+
+      - name: download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-coverage
+          path: reports/deploy-coverage
+
+      - name: convert test coverage report to Sonarqube format
+        run: |
+          mkdir -p reports/coverage
+          sf acc-transformer transform \
+            -j reports/deploy-coverage/coverage/coverage.json \
+            -r reports/coverage/coverage.xml \
+            -f sonar
+
+      - name: run PMD static code analysis for Apex code
+        run: >
+          docker run
+          --rm
+          -v .:/usr/src
+          docker.wtax.co/wtax/pmd:7.1.0
+          check
+          --rulesets=/usr/src/apex-ruleset.xml
+          --dir=/usr/src
+          --report-file=/usr/src/reports/pmd.xml
+          --format=xml
+          --no-fail-on-violation
+
+      - name: write encrypted sonar token to file
+        run: echo '${{ inputs.sonar-login-encrypted }}' > .sonar-login
+
+      - name: mask sonar token in logs
+        run: echo "::add-mask::$(ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login)"
+
+      - name: decrypt the sonar token
+        run: |
+          echo -n "sonar_login_decrypted=" >> $GITHUB_ENV
+          ansible-vault decrypt --vault-password-file=.vault-password --output - .sonar-login >> $GITHUB_ENV
+
+      - name: send test coverage results to SonarQube
+        run: >
+          docker run --rm
+          -e SONAR_HOST_URL="${{ inputs.sonar-url }}"
+          -e SONAR_LOGIN="${sonar_login_decrypted}"
+          -v ".:/usr/src"
+          sonarsource/sonar-scanner-cli:5
+          -Dsonar.projectKey=${GITHUB_REPOSITORY#*/}
+          -Dsonar.javascript.file.suffixes=.cls
+          -Dsonar.sources=${{ inputs.source-directory }}/main
+          -Dsonar.tests=${{ inputs.source-directory }}/test
+          -Dsonar.coverageReportPaths=reports/coverage/coverage.xml
+          -Dsonar.java.pmd.reportPaths=reports/pmd.xml
+          -Dsonar.qualitygate.wait=${{ inputs.sonar-quality-gate }}

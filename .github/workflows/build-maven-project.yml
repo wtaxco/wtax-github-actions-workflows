@@ -30,7 +30,8 @@ on:
         required: true
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: larger-runner-ci
     env:
       GOALS: clean verify sonar:sonar io.github.r0bb3n:sonar-quality-gate-maven-plugin:1.2.1:check
     steps:
