@@ -23,6 +23,10 @@ on:
         type: string
         description: The name of a GitHub deployment environment in the repository that determines which deployment protection rules, such as reviews, will apply to this deployment.
         required: false
+      environment-type:
+        type: string
+        description: The environment type to which this workflow will deploy the java application. The workflow will choose an appropriate runner that has access to the deployment environment. Either 'prod' or 'nonprod'.
+        required: true
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.
@@ -34,7 +38,8 @@ on:
 jobs:
   deploy:
     environment: ${{ inputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ${{ inputs.environment-type == 'prod' && 'larger-runner-java-prod' || 'larger-runner-java-nonprod' }}
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me

@@ -43,7 +43,8 @@ on:
 jobs:
   prepare_release:
     name: "Prepare release"
-    runs-on: ubuntu-latest
+    runs-on:
+      group: larger-runner-ci
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
@@ -104,11 +105,13 @@ jobs:
     outputs:
       release-version: ${{ env.VERSION }}
       release-branch: ${{ env.RELEASE_BRANCH }}
+
   perform_release:
     name: "Perform release"
     needs:
       - prepare_release
-    runs-on: ubuntu-latest
+    runs-on:
+      group: larger-runner-ci
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
