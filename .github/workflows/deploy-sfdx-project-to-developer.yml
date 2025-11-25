@@ -1,6 +1,10 @@
 on:
   workflow_call:
     inputs:
+      git-deploy-tag:
+        type: string
+        description: Optional git tag to apply to the deployed commit (e.g. dev, uat, prod)
+        required: false
       sonar-url:
         type: string
         description: URL of the Sonar server to use for analyzing the code. If omitted, the WTax Sonar server at sonar.wtax.co will be used. The `sonar-login` secret should hold a valid access token or username:password combination for this server.
@@ -177,5 +181,6 @@ jobs:
       test-classes-artifact: ${{ inputs.test-classes-artifact }}
       deletes-artifact: ${{ inputs.deletes-artifact }}
       running-environment: developer
+      git-deploy-tag: ${{ inputs.git-deploy-tag }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
