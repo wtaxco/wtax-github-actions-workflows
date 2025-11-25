@@ -1,6 +1,13 @@
+permissions:
+  contents: write
+
 on:
   workflow_call:
     inputs:
+      git-deploy-tag:
+        type: string
+        description: Optional git tag to apply to the deployed commit (e.g. dev, uat, prod)
+        required: false
       source-directory:
         type: string
         description: Directory containing the main source of the project. Usually force-app, but can be something else. This is used to determine which entry in packageDirectories in sfdx-project.json is the main one. Defaults to force-app.
@@ -320,6 +327,13 @@ jobs:
           echo "Deploying to ${{ inputs.username }} and running unit tests... (timeout ${timeout} minutes)"
           sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}" --wait=${timeout}
 
+      - name: tag deployed commit
+        if: ${{ inputs.git-deploy-tag != '' }}
+        run: |
+          git fetch --tags
+          git tag -f "${{ inputs.git-deploy-tag }}" "$GITHUB_SHA"
+          git push origin "${{ inputs.git-deploy-tag }}" --force
+
       - name: install apex-code-coverage-transformer plugin
         run: sf plugins install apex-code-coverage-transformer@1.7.6
         if: inputs.sonar-url != ''
@@ -347,14 +361,14 @@ jobs:
 
       - name: run PMD static code analysis for Apex code
         run: >
-          docker run 
-          --rm 
-          -v .:/usr/src 
-          docker.wtax.co/wtax/pmd:7.1.0 
-          check 
-          --rulesets=/usr/src/apex-ruleset.xml 
-          --dir=/usr/src 
-          --report-file=/usr/src/reports/pmd.xml 
+          docker run
+          --rm
+          -v .:/usr/src
+          docker.wtax.co/wtax/pmd:7.1.0
+          check
+          --rulesets=/usr/src/apex-ruleset.xml
+          --dir=/usr/src
+          --report-file=/usr/src/reports/pmd.xml
           --format=xml
           --no-fail-on-violation
         if: inputs.sonar-url != ''
@@ -375,16 +389,16 @@ jobs:
 
       - name: send test coverage results to Sonar
         run: >
-          docker run --rm 
-          -e SONAR_HOST_URL="${{ inputs.sonar-url }}" 
-          -e SONAR_LOGIN="${sonar_login_decrypted}" 
-          -v ".:/usr/src" 
-          sonarsource/sonar-scanner-cli:5 
-          -Dsonar.projectKey=${GITHUB_REPOSITORY#*/} 
-          -Dsonar.javascript.file.suffixes=.cls 
-          -Dsonar.sources=${{ inputs.source-directory }}/main 
-          -Dsonar.tests=${{ inputs.source-directory }}/test 
-          -Dsonar.coverageReportPaths=reports/coverage/coverage.xml 
+          docker run --rm
+          -e SONAR_HOST_URL="${{ inputs.sonar-url }}"
+          -e SONAR_LOGIN="${sonar_login_decrypted}"
+          -v ".:/usr/src"
+          sonarsource/sonar-scanner-cli:5
+          -Dsonar.projectKey=${GITHUB_REPOSITORY#*/}
+          -Dsonar.javascript.file.suffixes=.cls
+          -Dsonar.sources=${{ inputs.source-directory }}/main
+          -Dsonar.tests=${{ inputs.source-directory }}/test
+          -Dsonar.coverageReportPaths=reports/coverage/coverage.xml
           -Dsonar.java.pmd.reportPaths=reports/pmd.xml
           -Dsonar.qualitygate.wait=${{ inputs.sonar-quality-gate == true }}
         if: inputs.sonar-url != ''

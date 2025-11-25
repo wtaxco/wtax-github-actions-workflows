@@ -1,6 +1,10 @@
 on:
   workflow_call:
     inputs:
+      git-deploy-tag:
+        type: string
+        description: Optional git tag to apply to the deployed commit (e.g. dev, uat, prod)
+        required: false
       instance-url:
         type: string
         description: Salesforce instance URL to log in to as Dev Hub org
@@ -166,5 +170,6 @@ jobs:
       test-classes-artifact: ${{ inputs.test-classes-artifact }}
       deletes-artifact: ${{ inputs.deletes-artifact }}
       running-environment: uat
+      git-deploy-tag: ${{ inputs.git-deploy-tag }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
