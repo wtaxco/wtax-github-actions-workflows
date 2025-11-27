@@ -74,7 +74,7 @@ on:
         required: false
       running-environment:
         type: string
-        description: The name of the deployment environment in the repository that the workflow is being called from.
+        description: The name of the deployment environment in the repository that the workflow is being called from. This is used to create unique upload artifact names when this reusable workflow is called from different jobs in the same calling workflow.
         required: false
       metadata-artifact:
         type: string
@@ -110,10 +110,10 @@ jobs:
     with:
       run-compile-and-test: false
     secrets:
-        ansible-vault-password: ${{ secrets.ansible-vault-password }}
+      ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
   deploy:
-    needs: [build]
+    needs: [ build ]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     # Temporary: always() is used for backward compatibility with legacy build+deploy workflows.
@@ -392,6 +392,6 @@ jobs:
       - name: archive target directory
         uses: actions/upload-artifact@v4
         with:
-          name: ${{inputs.running-environment}}-deployment-target-artifact
+          name: ${{ inputs.running-environment }}-deployment-target-artifact
           path: target
         if: always()

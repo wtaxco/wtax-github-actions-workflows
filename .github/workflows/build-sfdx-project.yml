@@ -5,7 +5,7 @@ on:
     inputs:
       scratch-org-pool-name:
         type: string
-        description: Name of the scratch org pool to use for the scratch org
+        description: When specified, uses a scratch org from the specified scratch org to do the build on. If ommitted, creates a scratch org on-demand. Using this can speed up the build significantly as the time to create a scratch org and install packages on it is saved.
         required: false
       source-directory:
         type: string
@@ -134,7 +134,7 @@ on:
         default: true
       run-compile-and-test:
         type: boolean
-        description: Whether to run the compile-and-test job after building the metadata. Set to "yes" to run the compile-and-test job, anything else to skip it.
+        description: Whether to deploy the project to a scratch org and (if `run-tests` is `true`) run unit tests. If false, the only thing this workflow does is produce a ZIP file with the project sources converted to metadata format, a text file with the unit test classes found in the project, and a CSV file with the metadata flagged for deletion.
         required: false
         default: true
 
@@ -267,7 +267,7 @@ jobs:
           echo "run-compile-and-test=${{ inputs.run-compile-and-test }}" >> $GITHUB_OUTPUT
 
   compile-and-test:
-    if: ${{inputs.run-compile-and-test == true}}
+    if: ${{ inputs.run-compile-and-test }}
     needs: build
     runs-on: ubuntu-latest
     steps:
