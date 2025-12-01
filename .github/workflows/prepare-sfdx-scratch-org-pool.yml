@@ -107,4 +107,4 @@ jobs:
             done >>$GITHUB_OUTPUT
 
       - name: prepare scratch org pool
-        run: sf orchestrator prepare -v OrgPool --loglevel debug --keys "${{ steps.installationkeys.outputs.installationkeys }}"
+        run: sfp orchestrator prepare -v OrgPool --loglevel debug --keys "${{ steps.installationkeys.outputs.installationkeys }}"
