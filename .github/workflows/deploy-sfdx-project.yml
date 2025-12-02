@@ -221,118 +221,118 @@ jobs:
           echo destructiveChangeType=post >>$GITHUB_ENV
         if: inputs.destructive-changes-after-deployment
 
-#      - name: create destructive change manifest for components marked for deletion
-#        run: |
-#          echo "Creating destructive change manifest for components marked for deletion"
-#
-#          # Set some variables
-#          target_org="${{ inputs.username }}"
-#
-#          # Get list of components on org
-#          echo "- Getting list of components on org"
-#          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexClass' --json | jq -r '.result.records[].Name' > target/org-apex-classes.txt
-#          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json | jq -r '.result.records[].Name' > target/org-apex-triggers.txt
-#          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexPage' --json | jq -r '.result.records[].Name' > target/org-apex-pages.txt
-#          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
-#          sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
-#          sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
-#          sf data query -o ${target_org} -q 'SELECT DeveloperName FROM FlowDefinition' --usetoolingapi --json | jq -r '.result.records[].DeveloperName' > target/org-flows.txt
-#
-#          # Move components that still exist on org to delete/source
-#          echo - Filtering components that still exist on org
-#          >target/scheduled-for-destruction.txt
-#          >target/already-destroyed.txt
-#          >target/cannot-destroy.txt
-#          awk -F, '{print "type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
-#            eval $line
-#            if [ "$type" == "ApexClass" ]; then
-#              if grep "^${fullName}\$" target/org-apex-classes.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            elif [ "$type" == "ApexTrigger" ]; then
-#              if grep "^${fullName}\$" target/org-apex-triggers.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            elif [ "$type" == "ApexPage" ]; then
-#              if grep "^${fullName}\$" target/org-apex-pages.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            elif [ "$type" == "ApexComponent" ]; then
-#              if grep "^${fullName}\$" target/org-apex-components.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            elif [ "$type" == "Network" ]; then
-#              if grep "^${fullName}\$" target/org-networks.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            elif [ "$type" == "Site" ]; then
-#              if grep "^${fullName}\$" target/org-sites.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            elif [ "$type" == "Flow" ]; then
-#              if grep "^${fullName}\$" target/org-flows.txt; then
-#                echo "    Scheduling ${type}:${fullName} for destruction"
-#                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
-#              else
-#                echo "${type}:${fullName}" >>target/already-destroyed.txt
-#              fi
-#            else
-#              echo "${type}:${fullName}" >>target/cannot-destroy.txt
-#              echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
-#            fi
-#          done
-#
-#          scheduled_for_destruction=$(wc -l <target/scheduled-for-destruction.txt)
-#          already_destroyed=$(wc -l <target/already-destroyed.txt)
-#          cannot_destroy=$(wc -l <target/cannot-destroy.txt)
-#          echo "${scheduled_for_destruction} component(s) to be deleted from org, ${already_destroyed} already deleted (cannot delete ${cannot_destroy})."
-#          if [ ${scheduled_for_destruction} -gt 0 ]; then
-#            echo "- Generating destructive change manifest..."
-#            metadata_args=$(cat target/scheduled-for-destruction.txt|while read line; do echo -n "--metadata ${line} "; done)
-#            sf project generate manifest ${metadata_args} --type ${destructiveChangeType} --output-dir=target/${{ github.event.repository.name }}
-#            echo "Ok! Added ${scheduled_for_destruction} destructive changes to target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}."
-#          else
-#            echo "No destructive changes to add."
-#            cat <<EOF >target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}
-#          <?xml version="1.0" encoding="UTF-8"?>
-#          <Package xmlns="http://soap.sforce.com/2006/04/metadata" />
-#          EOF
-#          fi
-#          echo
-#
-#      - name: deploy to org and run Apex tests
-#        run: |
-#          timeout=180
-#          testflags=$(cat target/test-classes.txt | while read testClass; do
-#            echo -n "--tests=${testClass} "
-#          done)
-#          echo "Deploying to ${{ inputs.username }} and running unit tests... (timeout ${timeout} minutes)"
-#          sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}" --wait=${timeout}
-#
-#      - name: tag deployed commit
-#        if: ${{ inputs.git-deploy-tag != '' }}
-#        run: |
-#          git fetch --tags
-#          git tag -f "${{ inputs.git-deploy-tag }}" "$GITHUB_SHA"
-#          git push origin "${{ inputs.git-deploy-tag }}" --force
+      - name: create destructive change manifest for components marked for deletion
+        run: |
+          echo "Creating destructive change manifest for components marked for deletion"
+          
+          # Set some variables
+          target_org="${{ inputs.username }}"
+          
+          # Get list of components on org
+          echo "- Getting list of components on org"
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexClass' --json | jq -r '.result.records[].Name' > target/org-apex-classes.txt
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexTrigger' --json | jq -r '.result.records[].Name' > target/org-apex-triggers.txt
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexPage' --json | jq -r '.result.records[].Name' > target/org-apex-pages.txt
+          sf data query -t -o ${target_org} -q 'SELECT Name FROM ApexComponent' --json | jq -r '.result.records[].Name' > target/org-apex-components.txt
+          sf data query -o ${target_org} -q 'SELECT Name FROM Network' --json | jq -r '.result.records[].Name' > target/org-networks.txt
+          sf data query -o ${target_org} -q 'SELECT Name FROM Site' --json | jq -r '.result.records[].Name' > target/org-sites.txt
+          sf data query -o ${target_org} -q 'SELECT DeveloperName FROM FlowDefinition' --usetoolingapi --json | jq -r '.result.records[].DeveloperName' > target/org-flows.txt
+          
+          # Move components that still exist on org to delete/source
+          echo - Filtering components that still exist on org
+          >target/scheduled-for-destruction.txt
+          >target/already-destroyed.txt
+          >target/cannot-destroy.txt
+          awk -F, '{print "type=\""$2"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
+            eval $line
+            if [ "$type" == "ApexClass" ]; then
+              if grep "^${fullName}\$" target/org-apex-classes.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "ApexTrigger" ]; then
+              if grep "^${fullName}\$" target/org-apex-triggers.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "ApexPage" ]; then
+              if grep "^${fullName}\$" target/org-apex-pages.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "ApexComponent" ]; then
+              if grep "^${fullName}\$" target/org-apex-components.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Network" ]; then
+              if grep "^${fullName}\$" target/org-networks.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Site" ]; then
+              if grep "^${fullName}\$" target/org-sites.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            elif [ "$type" == "Flow" ]; then
+              if grep "^${fullName}\$" target/org-flows.txt; then
+                echo "    Scheduling ${type}:${fullName} for destruction"
+                echo "${type}:${fullName}" >>target/scheduled-for-destruction.txt
+              else
+                echo "${type}:${fullName}" >>target/already-destroyed.txt
+              fi
+            else
+              echo "${type}:${fullName}" >>target/cannot-destroy.txt
+              echo "    WARNING: Support for deleting components of metadata type ${type} not implemented yet (${type}:${fullName})."
+            fi
+          done
+          
+          scheduled_for_destruction=$(wc -l <target/scheduled-for-destruction.txt)
+          already_destroyed=$(wc -l <target/already-destroyed.txt)
+          cannot_destroy=$(wc -l <target/cannot-destroy.txt)
+          echo "${scheduled_for_destruction} component(s) to be deleted from org, ${already_destroyed} already deleted (cannot delete ${cannot_destroy})."
+          if [ ${scheduled_for_destruction} -gt 0 ]; then
+            echo "- Generating destructive change manifest..."
+            metadata_args=$(cat target/scheduled-for-destruction.txt|while read line; do echo -n "--metadata ${line} "; done)
+            sf project generate manifest ${metadata_args} --type ${destructiveChangeType} --output-dir=target/${{ github.event.repository.name }}
+            echo "Ok! Added ${scheduled_for_destruction} destructive changes to target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}."
+          else
+            echo "No destructive changes to add."
+            cat <<EOF >target/${{ github.event.repository.name }}/${destructiveChangeManifestFile}
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Package xmlns="http://soap.sforce.com/2006/04/metadata" />
+          EOF
+          fi
+          echo
+
+      - name: deploy to org and run Apex tests
+        run: |
+          timeout=180
+          testflags=$(cat target/test-classes.txt | while read testClass; do
+            echo -n "--tests=${testClass} "
+          done)
+          echo "Deploying to ${{ inputs.username }} and running unit tests... (timeout ${timeout} minutes)"
+          sf project deploy start --target-org="${{ inputs.username }}" --test-level=RunSpecifiedTests ${testflags}--coverage-formatters=json --results-dir=reports --metadata-dir="target/${{ github.event.repository.name }}" --wait=${timeout}
+
+      - name: tag deployed commit
+        if: ${{ inputs.git-deploy-tag != '' }}
+        run: |
+          git fetch --tags
+          git tag -f "${{ inputs.git-deploy-tag }}" "$GITHUB_SHA"
+          git push origin "${{ inputs.git-deploy-tag }}" --force
 
       - name: archive coverage report
         uses: actions/upload-artifact@v4
@@ -349,7 +349,11 @@ jobs:
 
   sonar-and-pmd:
     needs: [ deploy ]
-    runs-on: larger-runner-ci
+    # Temporary: always() is used for backward compatibility with legacy build+deploy workflows.
+    # Remove once the unified single-deployment pipeline is in place.
+    if: ${{ always() && (needs.deploy.result == 'success') }}
+    runs-on:
+      group: larger-runner-ci
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
