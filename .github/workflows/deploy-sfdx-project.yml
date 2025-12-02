@@ -348,7 +348,7 @@ jobs:
         if: always()
 
   sonar-and-pmd:
-    needs: deploy
+    needs: [ deploy ]
     runs-on:
       group: larger-runner-ci
     steps:
