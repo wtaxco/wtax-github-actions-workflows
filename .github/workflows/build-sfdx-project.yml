@@ -311,7 +311,7 @@ jobs:
               --alias dev-hub
 
       - name: fetch scratch org from pool
-        run: sf pool fetch -t "${{ inputs.scratch-org-pool-name }}" -v dev-hub -a scratch-org
+        run: sfp pool fetch -t "${{ inputs.scratch-org-pool-name }}" -v dev-hub -a scratch-org
         if: ${{ inputs.scratch-org-pool-name != '' }}
 
       - name: create scratch org
