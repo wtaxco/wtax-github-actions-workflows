@@ -378,12 +378,21 @@ jobs:
         run: npm install -g @salesforce/cli
         if: inputs.sonar-url != ''
 
+      - name: create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+        if: inputs.sonar-url != ''
+
       - name: install apex-code-coverage-transformer plugin
         run: sf plugins install apex-code-coverage-transformer@1.7.6
         if: inputs.sonar-url != ''
 
       - name: convert test coverage report to Sonarqube format
-        run: sf apex-code-coverage transformer transform -j reports/coverage/coverage.json -x reports/coverage/coverage.xml
+        run: sf acc-transformer transform \
+          -j reports/coverage/coverage.json \
+          -r reports/coverage/coverage.xml \
+          -f sonar
         if: inputs.sonar-url != ''
 
       - name: write encrypted Docker registry password to file
