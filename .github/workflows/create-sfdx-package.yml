@@ -226,7 +226,7 @@ jobs:
           echo '[ "apex-code-coverage-transformer" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
 
       - name: install sfpowerscripts
-        run: npm install -f @flxbl-io/sfp
+        run: npm install -g @flxbl-io/sfp
 
       - name: connect to Dev Hub
         run: |
