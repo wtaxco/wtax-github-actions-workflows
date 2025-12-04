@@ -175,7 +175,6 @@ jobs:
       jwt-key-encrypted: ${{ inputs.jwt-key-encrypted }}
       run-tests: ${{ inputs.run-tests }}
       destructive-changes-after-deployment: ${{ inputs.destructive-changes-after-deployment }}
-      environment: ${{ inputs.environment }}
       metadata-artifact: ${{ inputs.metadata-artifact }}
       test-classes-artifact: ${{ inputs.test-classes-artifact }}
       deletes-artifact: ${{ inputs.deletes-artifact }}
