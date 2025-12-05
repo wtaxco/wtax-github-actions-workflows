@@ -362,6 +362,7 @@ jobs:
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/sonar-and-pmd.yml@main
     needs: deploy
     with:
+      sonar-code-coverage-report: "reports/deploy-coverage"
       sonar-url: ${{ inputs.sonar-url }}
       source-directory: ${{ inputs.source-directory }}
       docker-username: ${{ inputs.docker-username }}
