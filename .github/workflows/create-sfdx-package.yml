@@ -305,7 +305,18 @@ jobs:
             --result-format=json \
             --output-dir=reports/deploy-coverage
 
-      - name: archive coverage report
+      - name: check if deploy-coverage artifact exists
+        id: check_artifact
+        run: |
+          existing=$(gh run-artifact list --limit 100 | grep '^deploy-coverage$' || true)
+          if [ -n "$existing" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: upload deploy-coverage artifact
+        if: ${{ steps.check_artifact.outputs.exists == 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: deploy-coverage
