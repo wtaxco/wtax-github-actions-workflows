@@ -341,7 +341,6 @@ jobs:
           git push origin "${{ inputs.git-deploy-tag }}" --force
 
       - name: upload deploy-coverage artifact
-        if: ${{ steps.check_artifact.outputs.exists == 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: deploy-coverage
