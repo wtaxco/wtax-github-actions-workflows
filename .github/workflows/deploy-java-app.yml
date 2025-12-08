@@ -43,7 +43,9 @@ on:
 jobs:
   deploy:
     environment: ${{ inputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on:
+      group: ${{ inputs.environment-type == 'prod' && 'larger-runner-java-prod' || 'larger-runner-java-nonprod' }}
+
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
