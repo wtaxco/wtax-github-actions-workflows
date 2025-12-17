@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       boot-jar:
-        description: The path to the executable JAR to deploy, e.g. wtax-my-service-1.0.0-SNAPSHOT.jar. This must be an artifact that was archived in a previous job in this workflow. The JAR path will be passed to the Ansible playbook via `-e boot_jar=<<boot-jar>>`.
+        description: The path to the executable JAR to deploy, e.g. target/wtax-my-service-1.0.0-SNAPSHOT.jar. This must be in the artifact that was archived in a previous job in this workflow. The JAR path will be passed to the Ansible playbook via `-e boot_jar=<<boot-jar>>`.
         type: string
         required: true
       known-hosts:
@@ -31,7 +31,16 @@ on:
         type: string
         description: Optional git tag to apply to the deployed commit (e.g. dev, uat, prod)
         required: false
-
+      build-artifact-name:
+        type: string
+        description: The name of the artifact containing the build output from all the target directories in the project that a previous job in this workflow created and uploaded using the upload-artifact action. This job will download it using the download-artifact action. Defaults to "artifact".
+        required: false
+        default: artifact
+      deploy-scripts-artifact-name:
+        type: string
+        description: The name of the artifact containing the contents of the project's deploy directory that a previous job in this workflow created and uploaded using the upload-artifact action. This job will download it using the download-artifact action. Defaults to "deploy-scripts".
+        required: false
+        default: deploy-scripts
     secrets:
       ansible-vault-password:
         description: Password to be used to decrypt values encrypted by Ansible Vault. Can be omitted if no Ansible Vault encrypted values are in the playbook or inventory.
