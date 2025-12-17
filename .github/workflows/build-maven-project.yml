@@ -21,6 +21,16 @@ on:
         description: Version of the Zulu JDK to use to build the project. If omitted, defaults to 17.
         required: false
         default: 17
+      build-artifact-name:
+        type: string
+        description: The name of the artifact containing the build output from all the target directories in the project that this job will create and upload using the upload-artifact action. It can be downloaded in subsequent jobs in the same workflow using the download-artifact action, specifying the artifact name specified by this input. Defaults to "artifact".
+        required: false
+        default: artifact
+      deploy-scripts-artifact-name:
+        type: string
+        description: The name of the artifact containing the contents of the project's deploy directory that this job will create and upload using the upload-artifact action. It can be downloaded in subsequent jobs in the same workflow using the download-artifact action, specifying the artifact name specified by this input. Defaults to "deploy-scripts".
+        required: false
+        default: deploy-scripts
     secrets:
       maven-repository-password:
         description: Password for the Maven repository specified in the `maven-repository-url` corresponding to the `maven-repository-username`.
@@ -76,10 +86,12 @@ jobs:
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifact
-          path: target
+          name: ${{ inputs.build-artifact-name }}
+          path: |
+            target
+            **/target
       - name: Archive deploy scripts
         uses: actions/upload-artifact@v4
         with:
-          name: deploy-scripts
+          name: ${{ inputs.deploy-scripts-artifact-name }}
           path: deploy
