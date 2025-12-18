@@ -79,3 +79,9 @@ jobs:
       - name: Run deploy playbook
         run: ansible-playbook -i ${{ inputs.ansible-inventory }} -e boot_jar=${{ inputs.boot-jar }} --vault-password-file=.vault-password deploy.yml
         working-directory: ./deploy
+      - name: Tag deployed commit
+        if: ${{ inputs.git-deploy-tag != '' }}
+        run: |
+          git fetch --tags
+          git tag -f "${{ inputs.git-deploy-tag }}" "$GITHUB_SHA"
+          git push origin "${{ inputs.git-deploy-tag }}" --force
