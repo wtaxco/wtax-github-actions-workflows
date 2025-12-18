@@ -176,6 +176,16 @@ jobs:
       - name: Install Salesforce CLI (sfdx)
         run: npm list -g @salesforce/cli || npm install -g @salesforce/cli
 
+      - name: find pre-build scripts
+        id: find-pre-build-scripts
+        run: ls deploy/hooks/pre-build/*.sh >pre_build_scripts.txt 2>/dev/null || echo "No pre-build scripts found"
+
+      - name: execute pre-build scripts
+        run: |
+          while read -r script; do
+            bash "$script" </dev/null
+          done <pre_build_scripts.txt
+
       - name: Package the source as metadata
         run: |
           mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
