@@ -24,7 +24,7 @@ on:
         type: string
         description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce used to connect to the Dev Hub org
         required: false
-        default: 3MVG9hYFI5K4tx6Rji0DdwHNZZezA.s1mmK1XeqnLHND8Sj2zvhl9R1Jo2hIT7pkdCFDDzXJXWQ==
+        default: 3MVG9mVMtbWMH6luwQZnh1Uwup6n5H3x2AJnTMrd3_HZSuTHQaZCRI4NhVfJtunn5UMRvyVpscVI9br8CDFmY
       jwt-key-encrypted:
         type: string
         description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
