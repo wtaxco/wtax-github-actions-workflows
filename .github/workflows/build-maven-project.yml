@@ -43,7 +43,7 @@ jobs:
     runs-on:
       group: larger-runner-ci
     env:
-      GOALS: clean verify sonar:sonar io.github.r0bb3n:sonar-quality-gate-maven-plugin:1.2.1:check
+      GOALS: clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.5.0.6356:sonar io.github.r0bb3n:sonar-quality-gate-maven-plugin:1.2.1:check
     steps:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
