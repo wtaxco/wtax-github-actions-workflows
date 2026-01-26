@@ -121,3 +121,4 @@ jobs:
           -Dsonar.coverageReportPaths=reports/coverage/coverage.xml
           -Dsonar.java.pmd.reportPaths=reports/pmd.xml
           -Dsonar.qualitygate.wait=${{ inputs.sonar-quality-gate }}
+          -Dsonar.exclusions=**/*.js,**/*.ts
