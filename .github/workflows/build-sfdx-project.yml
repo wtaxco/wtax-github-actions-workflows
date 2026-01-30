@@ -362,34 +362,7 @@ jobs:
       - name: run scripts
         run: test -d scripts/build-hooks/pre-test && for file in scripts/build-hooks/pre-test/*.apex; do sfdx apex run -f "$file"; done || echo "No pre-test scripts to run."
 
-      - name: determine which Apex classes and triggers are marked for deletion (have a "//DELETE" line)
-        run: |
-          mkdir target
-          grep -r '^\/\/ *DELETE$' "${{ inputs.source-directory }}"|awk -F':' '{print $1}'|while read line; do
-            echo -n $line
-            filename=`basename $line`
-            ext=${filename##*.}
-            if [ "${ext}" == "cls" ]; then
-              apexClass=`basename $filename .cls`
-              echo ',ApexClass,'$apexClass
-            elif [ "${ext}" == "trigger" ]; then
-              apexTrigger=`basename $filename .trigger`
-              echo ',ApexTrigger,'$apexTrigger
-            fi
-          done >target/deletes.csv
-          echo "`wc -l <target/deletes.csv` component(s) marked for deletion"
-
-      - name: delete metadata marked as //DELETE
-        run: |
-          echo "Removing Apex classes and triggers marked as deleted from source directory..."
-          awk -F, '{print "path=\""$1"\" fullName=\""$3"\""}' target/deletes.csv|while read line; do
-            eval $line
-            echo Deleting $fullName
-            # Remove files
-            rm $path $path-meta.xml
-          done
-
-      - name: push sources to scratch org and run tests for source-directory
+      - name: push source dependencies to scratch org
         run: |
           set -o pipefail
           jq -r '.packageDirectories[].path' < sfdx-project.json | \
@@ -397,34 +370,37 @@ jobs:
             if [ $(find ${path} -name '*-meta.xml'|wc -l) -eq 0 ]; then
               echo Skipping empty package directory ${path}
             else
-              if [ "${path}" == "${{ inputs.source-directory }}" -a "${{ inputs.run-tests }}" == "yes" ]; then
-                testflags=""
-                if [ -d "${path}/test" ]; then
-                  testflags=$(find ${path}/test -name '*.cls' | while read test; do
-                    if ! grep -c '^\/\/ *DELETE$' "${test}" >/dev/null; then
-                      echo -n "--tests=`basename ${test} .cls` "
-                    fi
-                  done)
-                else
-                  echo "No test classes found in ${path}/test."
-                fi
-                sf project deploy start --source-dir $path --ignore-conflicts --test-level=RunSpecifiedTests ${testflags}
-              else
+              if [ "${path}" != "${{ inputs.source-directory }}" ]; then
                 sf project deploy start --source-dir $path --ignore-conflicts
               fi
             fi
           done
 
-      - name: package the source as metadata
-        run: |
-          mkdir -p "target/${{ github.event.repository.name }}-${{ github.sha }}"
-          sf project convert source --source-dir "${{ inputs.source-directory }}" --output-dir="target/${{ github.event.repository.name }}-${{ github.sha }}"
-
-      - name: archive artifacts
-        uses: actions/upload-artifact@v4
+      - name: download metadata ZIP file (from build output)
+        uses: actions/download-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-${{ github.sha }}
-          path: target/${{ github.event.repository.name }}-${{ github.sha }}
+          name: ${{ needs.build.outputs.metadata-artifact }}
+          path: target/${{ github.event.repository.name }}
+
+      - name: download test classes file (from build output)
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.test-classes-artifact }}
+          path: target
+
+      - name: deploy project metadata to org and run Apex tests
+        run: |
+          timeout=180
+          testflags=$(cat target/test-classes.txt | while read testClass; do
+            echo -n "--tests=${testClass} "
+          done)
+          echo "Deploying to ${{ inputs.username }} and running unit tests... (timeout ${timeout} minutes)"
+          sf project deploy start \
+            --test-level=RunSpecifiedTests ${testflags} \
+            --coverage-formatters=json \
+            --results-dir=reports/deploy-coverage \
+            --metadata-dir="target/${{ github.event.repository.name }}" \
+            --wait=${timeout}
 
       - name: delete scratch org
         run: sf org delete scratch -p
