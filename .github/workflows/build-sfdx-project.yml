@@ -163,13 +163,13 @@ jobs:
       deletes-artifact: ${{ steps.set-outputs.outputs.deletes-artifact }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install jq
         run: sudo apt-get install -y jq
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 18.x
 
@@ -214,7 +214,7 @@ jobs:
 
       - name: Archive deletes.csv
         id: archive-deletes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}-deletes.csv"
           path: target/deletes.csv
@@ -256,14 +256,14 @@ jobs:
 
       - name: Archive test-classes.txt
         id: archive-tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}-test-classes.txt"
           path: target/test-classes.txt
 
       - name: Archive metadata directory
         id: archive-metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: "${{ github.event.repository.name }}-${{ github.sha }}.zip"
           path: target/${{ github.event.repository.name }}-${{ github.sha }}
@@ -282,7 +282,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -291,7 +291,7 @@ jobs:
         run: sudo apt-get install -y ccrypt
 
       - name: set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 18.x
 
@@ -378,13 +378,13 @@ jobs:
           done
 
       - name: download metadata ZIP file (from build output)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ${{ needs.build.outputs.metadata-artifact }}
           path: target/${{ github.event.repository.name }}
 
       - name: download test classes file (from build output)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: ${{ needs.build.outputs.test-classes-artifact }}
           path: target
