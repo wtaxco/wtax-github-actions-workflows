@@ -56,7 +56,7 @@ jobs:
           java-version: ${{ inputs.jdk-version }}
           cache: maven
       - name: maven-settings-xml-action
-        uses: whelk-io/maven-settings-xml-action@v14
+        uses: whelk-io/maven-settings-xml-action@v22
         with:
           repositories: |
               [
