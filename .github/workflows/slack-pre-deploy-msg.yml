@@ -45,34 +45,34 @@ jobs:
 
       - name: Send pre-deployment message to Slack
         id: slack_pre_deployment_message
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v2
         with:
+          webhook: ${{ steps.slack-url.outputs.url }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
-              {
-                "blocks": [
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Deployment to Prod Initiated :stopwatch:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
                     {
-                      "type": "header",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "Deployment to Prod Initiated :stopwatch:",
-                        "emoji": true
-                      }
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
                     },
                     {
-                      "type": "section",
-                      "fields": [
-                        {
-                          "type": "mrkdwn",
-                          "text": "*Repository:*\n${{ github.repository }}"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "*Deployed by:*\n${{ github.actor }}"
-                        }
-                      ]
+                      "type": "mrkdwn",
+                      "text": "*Deployed by:*\n${{ github.actor }}"
                     }
-                ]
-              }
-        env:
-          SLACK_WEBHOOK_URL: ${{ steps.slack-url.outputs.url }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+                  ]
+                }
+              ]
+            }
