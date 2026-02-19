@@ -41,25 +41,24 @@ jobs:
 
       - name: Send fail-deployment message to Slack
         id: slack_fail_deploy_msg
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v2
         with:
+          webhook: ${{ steps.slack-url.outputs.url }}
+          webhook-type: incoming-webhook
+          payload-templated: true
           payload: |
-              {
-                "blocks": [
-                  {
-                        "type": "header",
-                        "text": {
-                          "type": "plain_text",
-                          "text": ":x: Deployment Failed: ${{ github.repository }}",
-                          "emoji": true
-                        }
-                      },
-                      {
-                        "type": "divider"
+            {
+              "blocks": [
+                {
+                      "type": "header",
+                      "text": {
+                        "type": "plain_text",
+                        "text": ":x: Deployment Failed: ${{ github.repository }}",
+                        "emoji": true
                       }
-                ]
-              }
-        env:
-          SLACK_WEBHOOK_URL: ${{ steps.slack-url.outputs.url }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-            
+                    },
+                    {
+                      "type": "divider"
+                    }
+              ]
+            }
