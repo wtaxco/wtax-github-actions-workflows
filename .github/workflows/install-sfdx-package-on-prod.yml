@@ -154,7 +154,6 @@ jobs:
       client-id: ${{ inputs.client-id }}
       username: ${{ inputs.username }}
       jwt-key-encrypted: ${{ inputs.jwt-key-encrypted }}
-      environment: ${{ inputs.environment }}
     secrets:
       ansible-vault-password: ${{ secrets.ansible-vault-password }}
 
