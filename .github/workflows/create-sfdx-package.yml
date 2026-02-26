@@ -190,7 +190,7 @@ jobs:
       package-version-number: ${{ steps.package-version.outputs.version-number }}
     steps:
       - name: check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: install jq
         run: sudo apt-get install -y jq
@@ -199,7 +199,7 @@ jobs:
         run: sudo apt-get install -y ccrypt
 
       - name: set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 18.x
 
@@ -317,7 +317,7 @@ jobs:
 
       - name: upload deploy-coverage artifact
         if: ${{ steps.check_artifact.outputs.exists == 'false' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: deploy-coverage
           path: reports/deploy-coverage

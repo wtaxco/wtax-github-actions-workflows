@@ -53,7 +53,7 @@ jobs:
       - name: install libxml2-utils
         run: sudo apt -y install libxml2-utils
       - name: Check out project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -116,7 +116,7 @@ jobs:
       - name: Print IP address of runner
         run: curl -s ifconfig.me
       - name: Check out release tag or branch of the project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.prepare_release.outputs.release-branch }}
       - name: Set up JDK
@@ -154,7 +154,7 @@ jobs:
           git config user.email "github-actions@wtax.co"
           git config user.name "GitHub Actions"
       - name: Cache CVE database for OWASP dependency-check
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: dependency-check-data
           key: "${{ runner.os }}-dependency-check-database-${{ hashFiles('dependency-check-data/nvdcve-1.1-modified.meta') }}"
