@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: prepare environment
         run: mkdir -p reports/coverage
@@ -70,7 +70,7 @@ jobs:
         run: sf plugins install apex-code-coverage-transformer@2.5.2
 
       - name: download coverage reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: deploy-coverage
           path: reports/deploy-coverage
