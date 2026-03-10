@@ -1,0 +1,144 @@
+name: Create Test Data File
+
+on:
+  workflow_call:
+    inputs:
+      client-id:
+        description: 'Salesforce connected app client ID for JWT authentication'
+        required: true
+        type: string
+      instance-url:
+        description: 'Salesforce instance URL (e.g., https://login.salesforce.com)'
+        required: true
+        type: string
+      username:
+        description: 'Salesforce username for authentication'
+        required: true
+        type: string
+      scratch-org-pool-name:
+        description: 'Name of the scratch org pool to fetch from (leave empty to create new scratch org)'
+        required: false
+        type: string
+        default: ''
+      source-directory:
+        description: 'Source directory to deploy up to'
+        required: true
+        type: string
+    secrets:
+      GITHUB_TOKEN:
+        description: 'GitHub token for creating pull requests'
+        required: true
+
+jobs:
+  generate-data-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Salesforce CLI
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
+
+      - name: Create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "texei-sfdx-plugin" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: Install Texei plugin
+        run: sf plugins install texei-sfdx-plugin --force
+
+      - name: Install sfpowerscripts
+        run: npm install -g @flxbl-io/sfp
+
+      - name: Connect to Dev Hub
+        run: |
+          sf auth jwt grant \
+              --client-id="${{ inputs.client-id }}" \
+              --jwt-key-file=.jwt-key \
+              --instance-url="${{ inputs.instance-url }}" \
+              --username="${{ inputs.username }}" \
+              --set-default-dev-hub \
+              --alias dev-hub
+
+      - name: Create scratch org
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: sf org create scratch -w 15 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
+
+      - name: Fetch scratch org from pool
+        if: ${{ inputs.scratch-org-pool-name != '' }}
+        run: sfp pool fetch -t "${{ inputs.scratch-org-pool-name }}" -v dev-hub -a scratch-org
+
+      - name: Create installation keys
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        id: installationkeys
+        uses: ./.github/actions/create-installation-keys
+
+      - name: Install dependencies using sfpowerscripts
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: sfp dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installation-keys }}"
+
+      - name: Deploy project metadata to org
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: |
+          echo "Deploying to ${{ inputs.username }}
+          sf project deploy start \
+            --metadata-dir="target/${{ github.event.repository.name }}" \
+            --wait=180
+
+      - name: Detect objects from scratch org
+        id: objects
+        run: |
+          OBJECTS=$(sf sobject list -o scratch-org --sobject-type custom | \
+            grep '__c$' | \
+            grep -v '__e$' | \
+            sort -u | \
+            paste -sd "," -)
+          
+          echo "objects=$OBJECTS" >> $GITHUB_OUTPUT
+          echo "Detected objects from scratch org: $OBJECTS"
+
+      - name: Generate data plan
+        run: |
+          mkdir -p data
+          sf texei data plan generate \
+            --objects "${{ steps.objects.outputs.objects }}" \
+            --outputdir data
+
+      - name: delete scratch org
+        run: sf org delete scratch -p
+
+      - name: Excluding system fields LastModifiedDate, CreatedById, CreatedDate, LastModifiedById
+        run: |
+          jq '
+           .excludedFields = (
+           (.excludedFields // []) +
+           ["LastModifiedDate","CreatedById","CreatedDate","LastModifiedById"] | unique ) |
+           .sObjects |= map(
+           .excludedFields = (
+           (.excludedFields // []) +
+           ["LastModifiedDate","CreatedById","CreatedDate","LastModifiedById"] | unique )
+           )
+           ' data/data-plan.json > data/tmp.json && mv data/tmp.json data/data-plan.json
+
+      - name: Create Pull Request with updated data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b update-seeding-data
+          git add data/
+          git commit -m "Update exported seeding data" || exit 0
+          git push origin update-seeding-data --force
+          gh pr create --title "Update exported seeding data" \
+            --body "Automated update of exported seeding data from Salesforce" \
+            --head update-seeding-data --base main || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

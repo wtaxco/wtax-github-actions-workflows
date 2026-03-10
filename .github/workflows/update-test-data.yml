@@ -1,0 +1,91 @@
+name: Update Seeding Data
+
+on:
+  workflow_call:
+    inputs:
+      client-id:
+        type: string
+        description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce Sandbox where the data lies
+        required: false
+      instance-url:
+        type: string
+        description: Salesforce instance URL to log in to where the data lies
+        required: false
+      username:
+        type: string
+        description: Username of Salesforce user to authenticate as;
+        required: false
+    secrets:
+        ansible-vault-password:
+          required: true
+          description: Password to decrypt the Ansible Vault-encrypted private key
+        jwt-key-encrypted:
+          description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+          required: false
+
+jobs:
+  export-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli
+
+      - name: Create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "texei-sfdx-plugin" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: Install Texei plugin
+        run: |
+          sf plugins install texei-sfdx-plugin
+
+      - name: Write Ansible Vault password to file
+        run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
+
+      - name: Write encrypted JWT key to file
+        run: echo '${{ secrets.jwt-key-encrypted }}' >.jwt-key
+
+      - name: Decrypt the private key for the Continuous Integration connected app
+        run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
+
+      - name: Authenticate to sandbox containing test data
+        run: |
+          sf auth jwt grant \
+            --client-id="${{ inputs.client-id }}" \
+            --jwt-key-file=.jwt-key \
+            --instance-url=${{ inputs.instance-url }} \
+            --username=${{ inputs.username }} \
+            --alias=data-sandbox
+
+      - name: Export data using Texei
+        run: |
+          sf texei data export \
+          --outputdir ./data \
+          --dataplan ./data/data-plan.json \
+          --json \
+          --target-org data-sandbox
+
+      - name: Create Pull Request with updated data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b update-seeding-data
+          git add data/
+          git commit -m "Update exported seeding data" || exit 0
+          git push origin update-seeding-data --force
+          gh pr create --title "Update exported seeding data" \
+            --body "Automated update of exported seeding data from Salesforce" \
+            --head update-seeding-data --base main || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
