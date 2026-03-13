@@ -1,0 +1,192 @@
+name: Create Test Data File
+
+on:
+  workflow_call:
+    inputs:
+      client-id:
+        description: 'Salesforce connected app client ID for JWT authentication'
+        required: true
+        type: string
+      instance-url:
+        description: 'Salesforce instance URL (e.g., https://login.salesforce.com)'
+        required: true
+        type: string
+      username:
+        description: 'Salesforce username for authentication'
+        required: true
+        type: string
+      scratch-org-pool-name:
+        description: 'Name of the scratch org pool to fetch from (leave empty to create new scratch org)'
+        required: false
+        type: string
+    secrets:
+      github-token:
+        description: 'GitHub token for creating pull requests'
+        required: true
+      jwt-key-encrypted:
+        description: Ansible Vault-encrypted private key to connect to the Salesforce Sandbox where the data lies with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: true
+      ansible-vault-password:
+        description: 'Password for decrypting the JWT key with Ansible Vault'
+        required: true
+
+jobs:
+  generate-data-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Salesforce CLI
+        run: npm list -g @salesforce/cli || npm install -g @salesforce/cli && npm list -g @salesforce/cli
+
+      - name: Create unsigned plugin allowlist
+        run: |
+          mkdir -p $HOME/.config/sf
+          echo '[ "texei-sfdx-plugin" ]' > $HOME/.config/sf/unsignedPluginAllowList.json
+
+      - name: Install Texei plugin
+        run: sf plugins install texei-sfdx-plugin --force
+
+      - name: Install sfpowerscripts
+        run: npm install -g @flxbl-io/sfp
+
+      - name: install ccrypt
+        run: sudo apt-get install -y ccrypt
+
+      - name: Write encrypted JWT key to file
+        run: echo '${{ secrets.jwt-key-encrypted }}' >.jwt-key
+
+      - name: Write Ansible Vault password to file
+        run: echo "${{ secrets.ansible-vault-password }}" >.vault-password
+
+      - name: Decrypt the private key for the Continuous Integration connected app
+        run: ansible-vault decrypt --vault-password-file=.vault-password .jwt-key
+
+      - name: Connect to Dev Hub
+        run: |
+          sf auth jwt grant \
+              --client-id="${{ inputs.client-id }}" \
+              --jwt-key-file=.jwt-key \
+              --instance-url="${{ inputs.instance-url }}" \
+              --username="${{ inputs.username }}" \
+              --set-default-dev-hub \
+              --alias dev-hub
+
+      - name: Fetch scratch org from pool
+        if: ${{ inputs.scratch-org-pool-name != '' }}
+        run: sfp pool fetch -t "${{ inputs.scratch-org-pool-name }}" -v dev-hub -a scratch-org
+
+      - name: Create scratch org
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: sf org create scratch -w 15 -f config/project-scratch-def.json -d -y 1 --set-default --alias scratch-org
+
+      - name: Create installation key string from packageInstallationKeys section in sfdx-project.json
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        id: installationkeys
+        run: |
+          echo -n "installationkeys=">$GITHUB_OUTPUT
+          cat sfdx-project.json | jq -r '.packageInstallationKeys|to_entries[]|[.key,.value]|@tsv'| \
+          while read line; do
+            eval `echo "$line"|awk '{print "package="$1" encrypted_key="$2}'`
+            eval `echo $encrypted_key|awk -F: '{print "encryption_method="$1" encrypted_key="$2}'`
+            case $encryption_method in
+              ccrypt)
+                installation_key=`echo "$encrypted_key" | base64 --decode | ccat -k .vault-password`
+                ;;
+              plain)
+                installation_key="$encrypted_key"
+                ;;
+              *)
+                if [ "x$encrypted_key" == "x" ]; then
+                  # No encrypted key means there was no colon so key was plain text and encryption_method is actually the installation key
+                  installation_key="$encryption_method"
+                else
+                  echo "Unsupported encryption method '$encryption_method' for package $package"
+                  exit 3
+                fi
+                ;;
+            esac
+            echo -n "$package:$installation_key "
+          done >>$GITHUB_OUTPUT
+
+      - name: Install dependencies using sfpowerscripts
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: sfp dependency install -u scratch-org -v dev-hub --installationkeys "${{ steps.installationkeys.outputs.installationkeys }}"
+
+      - name: Deploy source and metadata to scratch org
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: |
+          jq -r '.packageDirectories[].path' < sfdx-project.json | \
+          while read path; do
+            if [ $(find "${path}" -name '*-meta.xml'|wc -l) -eq 0 ]; then
+              echo "Skipping empty package directory ${path}"
+            else
+              echo "Deploying package directory: ${path}"
+              sf project deploy start --source-dir $path --ignore-conflicts
+            fi
+          done
+
+      - name: Detect objects from scratch org
+        id: objects
+        run: |
+          OBJECTS=$(sf force schema sobject list -u scratch-org | \
+            grep -E '(__c$|^(Account|Case|Contact)$)' | \
+            grep -v '__e$' | \
+            sort -u | \
+            paste -sd "," -)
+          
+          echo "objects=$OBJECTS" >> $GITHUB_OUTPUT
+          echo "Detected objects from scratch org: $OBJECTS"
+
+      - name: Generate data plan
+        run: |
+          mkdir -p data
+          sf texei data plan generate \
+            --objects "${{ steps.objects.outputs.objects }}" \
+            --outputdir data
+
+      - name: Return scratch org to pool
+        if: ${{ inputs.scratch-org-pool-name != '' }}
+        run: sfp pool org return -o scratch-org
+
+      - name: Delete scratch org
+        if: ${{ inputs.scratch-org-pool-name == '' }}
+        run: sf org delete scratch -p
+
+      - name: Excluding system fields LastModifiedDate, CreatedById, CreatedDate, LastModifiedById
+        run: |
+          jq '
+           .excludedFields = (
+           (.excludedFields // []) +
+           ["LastModifiedDate","CreatedById","CreatedDate","LastModifiedById"] | unique ) |
+           .sObjects |= map(
+           .excludedFields = (
+           (.excludedFields // []) +
+           ["LastModifiedDate","CreatedById","CreatedDate","LastModifiedById"] | unique )
+           )
+           ' data/data-plan.json > data/tmp.json && mv data/tmp.json data/data-plan.json
+
+      - name: Commit updated data to main branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update exported seeding data"
+          git pull --rebase origin main
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
