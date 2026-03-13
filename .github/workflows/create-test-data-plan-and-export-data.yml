@@ -6,10 +6,6 @@ on:
         type: string
         description: OAuth client ID (sometimes called consumer key) of the connected app on Salesforce Sandbox where the data lies
         required: true
-      jwt-key-encrypted:
-        type: string
-        description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
-        required: true
       instance-url:
         type: string
         description: Salesforce instance URL to log in to where the data lies
@@ -17,13 +13,32 @@ on:
       username:
         type: string
         description: Username of Salesforce user to authenticate as
+      scratch-org-pool-name:
+        description: Name of the scratch org pool to fetch from (leave empty to create new scratch org)
+        required: false
+        type: string
+
+    secrets:
+      ansible-vault-password:
+          required: true
+          description: Password to decrypt the Ansible Vault-encrypted private key
+      jwt-key-encrypted:
+        description: Ansible Vault-encrypted private key to connect to the Salesforce Sandbox where the data lies with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: true
+      github-token:
+          required: true
+          description: GitHub token for creating pull requests
 
 jobs:
   create-test-data-file:
-    runs-on: ubuntu-latest
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/create-test-data-file.yml@IN-1063
     with:
+      # These values are for the wtax prod org to authorize a dev hub.
       client-id: 3H7cm0QedwevwtVKpSJ4PXeI7kvPanBgB3qK0sBU06E5MSMka3xqeg9JETRkx8Z8PQxuZkUvlMJH10MQ8A9uw
+      instance-url: https://wtax.my.salesforce.com
+      username: admin@wtax.prod
+      scratch-org-pool-name: ${{ inputs.scratch-org-pool-name }}
+    secrets:
       jwt-key-encrypted: |
         $ANSIBLE_VAULT;1.1;AES256
         30346637343332353137343065356231663637333238663665353034653366646632313034343966
@@ -115,15 +130,18 @@ jobs:
         30343939356334643163663735313066306530623466653562396239373938626662383836383162
         34616334316132396464613365376464643139393235356362336665393237643238663463396235
         33343738646537623434303736383066366362623333646532653532393566323032
-      instance-url: https://wtax.my.salesforce.com
-      username: admin@wtax.prod
+      ansible-vault-password: ${{ secrets.ansible-vault-password }}
+      github-token: ${{ secrets.github-token }}
 
   export-data:
-    runs-on: ubuntu-latest
     needs: create-test-data-file
     uses: wtaxco/wtax-github-actions-workflows/.github/workflows/update-test-data.yml@IN-1063
     with:
+      # These values are for the scratch org where the data will be exported from.
       client-id: ${{ inputs.client-id }}
-      jwt-key-encrypted: ${{ inputs.jwt-key-encrypted }}
       instance-url: ${{ inputs.instance-url }}
       username: ${{ inputs.username }}
+    secrets:
+      jwt-key-encrypted: ${{ secrets.jwt-key-encrypted }}
+      ansible-vault-password: ${{ secrets.ansible-vault-password }}
+      github-token: ${{ secrets.github-token }}

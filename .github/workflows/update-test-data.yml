@@ -16,12 +16,15 @@ on:
         description: Username of Salesforce user to authenticate as;
         required: false
     secrets:
-        ansible-vault-password:
-          required: true
-          description: Password to decrypt the Ansible Vault-encrypted private key
-        jwt-key-encrypted:
-          description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
-          required: false
+      ansible-vault-password:
+        required: true
+        description: Password to decrypt the Ansible Vault-encrypted private key
+      jwt-key-encrypted:
+        description: Ansible Vault-encrypted private key to connect to the target org with using the JWT flow (this should be encrypted using ansible-vault encrypt, NOT ansible-vault encrypt_string!)
+        required: false
+      github-token:
+        required: true
+        description: GitHub token for creating pull requests
 
 jobs:
   export-data:
@@ -75,17 +78,18 @@ jobs:
           --json \
           --target-org data-sandbox
 
-      - name: Create Pull Request with updated data
+      - name: Commit updated data to main branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b update-seeding-data
           git add data/
-          git commit -m "Update exported seeding data" || exit 0
-          git push origin update-seeding-data --force
-          gh pr create --title "Update exported seeding data" \
-            --body "Automated update of exported seeding data from Salesforce" \
-            --head update-seeding-data --base main || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update exported seeding data"
+          git pull --rebase origin main
+          git push origin main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.github-token }}
 
